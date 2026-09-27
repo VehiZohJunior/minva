@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MinVa</title>
+<script>
+  // Lien court d'un site client : https://.../minva/lire-a-man  →  site.html?o=lire-a-man
+  (function () {
+    var morceaux = location.pathname.split('/').filter(Boolean);
+    var slug = (morceaux.pop() || '').toLowerCase();
+    var base = '/' + morceaux.join('/') + (morceaux.length ? '/' : '');
+    if (/^[a-z0-9]([a-z0-9-]{1,48}[a-z0-9])$/.test(slug)) location.replace(base + 'site.html?o=' + slug);
+    else location.replace(base + 'index.html');
+  })();
+</script>
+</head>
+<body style="font-family:system-ui,sans-serif;padding:32px">Ouverture du site…</body>
+</html>

@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Site d'organisation · MinVa</title>
+<meta name="description" content="Site d'une organisation propulsé par MinVa.">
+<link rel="icon" href="assets/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Work+Sans:wght@400;600&display=swap">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/site.css">
+</head>
+<body>
+<div id="app" class="site" aria-busy="true">
+  <div class="chargement"><span class="point"></span><span class="point"></span><span class="point"></span><span class="sr">Chargement du site</span></div>
+</div>
+
+<dialog class="visionneuse" id="visionneuse" aria-label="Photo en grand">
+  <button type="button" class="vis-fermer" id="vis-fermer" aria-label="Fermer"></button>
+  <button type="button" class="vis-nav vis-prec" id="vis-prec" aria-label="Photo précédente"></button>
+  <img id="vis-img" alt="">
+  <button type="button" class="vis-nav vis-suiv" id="vis-suiv" aria-label="Photo suivante"></button>
+  <p class="vis-compte" id="vis-compte"></p>
+</dialog>
+
+<dialog class="fenetre" id="fen-partage" aria-labelledby="t-partage">
+  <div class="fenetre-tete"><h2 id="t-partage">Partager ce site</h2><button type="button" class="btn-icone" data-fermer aria-label="Fermer"></button></div>
+  <div class="fenetre-corps" id="partage-corps"></div>
+</dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/outils.js"></script>
+<script src="js/themes.js"></script>
+<script src="js/demo-store.js"></script>
+<script src="js/api.js"></script>
+<script src="js/site.js"></script>
+</body>
+</html>

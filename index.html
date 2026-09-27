@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MinVa · Le site de votre association, coopérative ou ONG</title>
+<meta name="description" content="MinVa donne à chaque association, coopérative ou ONG un site élégant qu’elle gère elle-même depuis son téléphone : actualités, projets, documents vérifiés. Paiement par Mobile Money.">
+<meta property="og:title" content="MinVa · Le site de votre organisation">
+<meta property="og:description" content="Actualités, projets, documents vérifiés : un site élégant que votre organisation gère elle-même, depuis son téléphone.">
+<meta property="og:image" content="assets/icone-512.png">
+<link rel="icon" href="assets/favicon.png">
+<meta name="theme-color" content="#14100D">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Allura&family=Playfair+Display:ital,wght@0,700;1,700&family=Work+Sans:wght@400;600&display=swap">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/vitrine.css">
+</head>
+<body>
+<div id="bandeau-demo"></div>
+
+<header class="v-barre">
+  <div class="wrap v-barre-in">
+    <a href="#haut" class="v-logo"><img src="assets/horizontal-noir.png" alt="MinVa – Gestion d'Organisations" width="130" height="41"></a>
+    <nav class="v-nav" aria-label="Navigation principale">
+      <a href="#fonctionnalites">Fonctionnalités</a><a href="#exemples">Exemples</a><a href="#tarifs">Tarifs</a><a href="#annuaire">Annuaire</a><a href="#faq">Questions</a>
+    </nav>
+    <a class="v-connexion" href="admin.html">Connexion</a>
+    <a class="btn btn-principal btn-sm" href="#abonnement">Créer mon site</a>
+  </div>
+</header>
+
+<main id="haut">
+  <!-- Héros -->
+  <section class="v-hero">
+    <div class="bogolan v-hero-motif"></div>
+    <div class="wrap v-hero-in">
+      <div class="v-hero-texte">
+        <p class="v-surtitre">Pour les associations, coopératives et ONG</p>
+        <h1>Le site de votre organisation, <em>prêt en une après-midi.</em></h1>
+        <p class="v-chapo">Actualités avec photos, projets et collectes, documents officiels vérifiés. Vous gérez tout depuis votre téléphone, et vous partagez votre lien sur WhatsApp.</p>
+        <div class="v-cta">
+          <a class="btn btn-principal" href="#abonnement">Créer le site de mon organisation</a>
+          <a class="btn v-btn-clair" href="#exemples">Voir des exemples</a>
+        </div>
+        <ul class="v-rassure">
+          <li>Paiement par Mobile Money</li><li>3 administrateurs</li><li>Assistance en français</li>
+        </ul>
+      </div>
+      <div class="v-demo" id="v-demo">
+        <div class="v-tel"><div class="v-tel-ecran"><iframe id="v-iframe" title="Exemple de site d’organisation créé avec MinVa" loading="lazy"></iframe></div></div>
+        <div class="v-themes"><span>Essayez un thème :</span><div id="v-pastilles" role="group" aria-label="Thèmes"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Deux publics -->
+  <section class="v-section wrap v-publics">
+    <div>
+      <h2>Un site qui parle à vos deux publics</h2>
+      <p class="v-intro">Vos membres et vos proches veulent voir ce que vous faites. Vos bailleurs veulent savoir s’ils peuvent vous faire confiance. MinVa répond aux deux sur la même page.</p>
+    </div>
+    <div class="v-deux">
+      <article class="v-public">
+        <h3>Pour vos membres et vos proches</h3>
+        <ul><li>Des actualités avec photos, comme sur Facebook</li><li>Un bouton WhatsApp pour vous écrire en un geste</li><li>Un lien court et un QR code à imprimer</li><li>Lisible sur les petits téléphones et les connexions lentes</li></ul>
+      </article>
+      <article class="v-public v-public-sombre">
+        <h3>Pour vos bailleurs et partenaires</h3>
+        <ul><li>Vos statuts, récépissé et rapports contrôlés par MinVa</li><li>Le badge « Vérifié par MinVa »</li><li>Vos projets avec le montant collecté et l’objectif</li><li>Une présentation sobre et crédible</li></ul>
+      </article>
+    </div>
+  </section>
+
+  <!-- Fonctionnalités -->
+  <section class="v-section wrap" id="fonctionnalites">
+    <div class="v-titre"><h2>Tout ce qu’il faut, rien de compliqué</h2></div>
+    <div class="v-fonctions" id="v-fonctions"></div>
+  </section>
+
+  <!-- Comment ça marche -->
+  <section class="v-bande">
+    <div class="wrap v-section v-etapes-zone">
+      <div class="v-titre"><h2>En ligne en trois étapes</h2></div>
+      <ol class="v-etapes">
+        <li><b>Vous vous abonnez</b><span>Remplissez le formulaire. Nous vous appelons, vous payez par Mobile Money, nous créons votre compte.</span></li>
+        <li><b>Vous personnalisez</b><span>Logo, photo, couleurs, textes : vous voyez votre site changer en direct pendant que vous le réglez.</span></li>
+        <li><b>Vous partagez</b><span>Envoyez votre lien dans vos groupes WhatsApp, imprimez votre QR code, publiez vos actualités.</span></li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- Exemples -->
+  <section class="v-section wrap" id="exemples">
+    <div class="v-titre"><h2>Ils ont leur site MinVa</h2><p id="v-ex-note"></p></div>
+    <div class="v-exemples" id="v-exemples"></div>
+  </section>
+
+  <!-- Tarifs -->
+  <section class="v-section wrap" id="tarifs">
+    <div class="v-titre"><h2>Des tarifs pensés pour les associations</h2><p>Paiement par Orange Money, MTN MoMo, Moov Money ou Wave.</p></div>
+    <div class="v-tarifs" id="v-tarifs"></div>
+  </section>
+
+  <!-- Annuaire -->
+  <section class="v-section wrap" id="annuaire">
+    <div class="v-titre"><h2>Annuaire des organisations</h2><p>Trouvez une organisation à soutenir près de chez vous.</p></div>
+    <div class="v-annuaire-outils">
+      <input type="search" id="v-q" placeholder="Nom, ville, action…" aria-label="Rechercher une organisation">
+      <select id="v-sect" aria-label="Secteur"><option value="">Tous les secteurs</option></select>
+    </div>
+    <div class="v-annuaire" id="v-annuaire"></div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="v-section wrap v-faq-zone" id="faq">
+    <div class="v-titre"><h2>Vos questions</h2></div>
+    <div class="v-faq">
+      <details><summary>Faut-il savoir faire de l’informatique ?</summary><p>Non. Si vous savez envoyer une photo sur WhatsApp, vous savez publier une actualité sur MinVa. Et nous vous accompagnons au démarrage.</p></details>
+      <details><summary>Qui peut modifier notre site ?</summary><p>Jusqu’à 3 administrateurs que vous choisissez, chacun avec son propre mot de passe. Personne d’autre, pas même MinVa, sauf si vous ouvrez vous-même l’accès pour un dépannage (72 heures maximum, tout est inscrit dans un journal).</p></details>
+      <details><summary>Nous n’avons pas encore de photos ni de logo.</summary><p>Ce n’est pas un problème. Votre site affiche un motif inspiré du bogolan et le sigle de votre organisation. Vous ajouterez vos photos au fil de vos actualités.</p></details>
+      <details><summary>Comment se passe le paiement ?</summary><p>Par Mobile Money (Orange Money, MTN MoMo, Moov Money, Wave). Nous vous envoyons les instructions après notre premier appel. Pas d’engagement : vous arrêtez quand vous voulez.</p></details>
+      <details><summary>À quoi servent les « documents de confiance » ?</summary><p>Vous envoyez vos statuts, votre récépissé de déclaration, vos rapports. MinVa les contrôle. Le public ne voit jamais les fichiers, seulement qu’ils sont vérifiés : c’est ce que regardent les bailleurs avant de soutenir une organisation.</p></details>
+      <details><summary>Pouvons-nous avoir notre propre adresse ?</summary><p>Chaque organisation a son lien, par exemple <b>…/minva/lire-a-man</b>, que vous pouvez partager librement. Il fonctionne aussi comme QR code.</p></details>
+    </div>
+  </section>
+
+  <!-- Abonnement -->
+  <section class="v-abonnement" id="abonnement">
+    <div class="bogolan v-hero-motif"></div>
+    <div class="wrap v-abonnement-in">
+      <div class="v-abo-texte">
+        <h2>Donnez un site à votre organisation</h2>
+        <p>Laissez-nous vos coordonnées. Nous vous appelons sous 48 heures pour répondre à vos questions et créer votre compte.</p>
+        <p class="v-abo-wa" id="v-abo-wa"></p>
+      </div>
+      <form class="v-form" id="v-form" novalidate>
+        <div class="champ"><label for="f-org">Nom de votre organisation</label><input id="f-org" type="text" maxlength="200" required></div>
+        <div class="grille-champs">
+          <div class="champ"><label for="f-sect">Secteur</label><select id="f-sect"></select></div>
+          <div class="champ"><label for="f-ville">Ville</label><input id="f-ville" type="text" maxlength="80"></div>
+        </div>
+        <p class="v-futur" id="f-futur" hidden>Adresse de votre futur site : <b id="f-lien"></b></p>
+        <div class="grille-champs">
+          <div class="champ"><label for="f-resp">Votre nom</label><input id="f-resp" type="text" maxlength="200" required></div>
+          <div class="champ"><label for="f-tel">Téléphone ou WhatsApp</label><input id="f-tel" type="tel" maxlength="40" required placeholder="07 00 00 00 00"></div>
+        </div>
+        <div class="grille-champs">
+          <div class="champ"><label for="f-email">Email (facultatif)</label><input id="f-email" type="email" maxlength="200"></div>
+          <div class="champ"><label for="f-plan">Formule</label><select id="f-plan"></select></div>
+        </div>
+        <div class="champ"><label for="f-msg">Un mot sur votre organisation (facultatif)</label><textarea id="f-msg" maxlength="2000"></textarea></div>
+        <div id="f-retour" aria-live="polite"></div>
+        <button type="submit" class="btn btn-principal btn-bloc" id="f-ok">Envoyer ma demande</button>
+      </form>
+    </div>
+  </section>
+</main>
+
+<footer class="v-pied">
+  <div class="wrap v-pied-in">
+    <img src="assets/horizontal-blanc.png" alt="MinVa – Gestion d'Organisations" width="150" height="47">
+    <nav aria-label="Pied de page"><a href="#fonctionnalites">Fonctionnalités</a><a href="#tarifs">Tarifs</a><a href="#annuaire">Annuaire</a><a href="admin.html">Espace organisation</a></nav>
+    <p>© <span id="annee"></span> MinVa · Gestion d’Organisations · Côte d’Ivoire</p>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/outils.js"></script>
+<script src="js/themes.js"></script>
+<script src="js/demo-store.js"></script>
+<script src="js/api.js"></script>
+<script src="js/vitrine.js"></script>
+</body>
+</html>
