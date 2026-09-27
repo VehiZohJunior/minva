@@ -17,7 +17,7 @@ window.MINVA_CONFIG = {
   URL_PUBLIQUE: 'https://vehizohjunior.github.io/minva/',
 
   // Numéro WhatsApp commercial de MinVa (site vitrine), format international sans +
-  WHATSAPP_COMMERCIAL: '2250700000000',
+  WHATSAPP_COMMERCIAL: '2250749660643',
 
   // Tarifs affichés sur le site vitrine (validés le 27/09/2026)
   TARIFS: [
