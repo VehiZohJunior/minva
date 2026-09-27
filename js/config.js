@@ -16,6 +16,9 @@ window.MINVA_CONFIG = {
   // Exemple une fois en ligne : 'https://vehizohjunior.github.io/minva/'
   URL_PUBLIQUE: 'https://vehizohjunior.github.io/minva/',
 
+  // Page de présentation de MinVa mise en avant (liens « Site créé avec MinVa »)
+  URL_VITRINE: 'https://minva-associations.higgsfield.app/',
+
   // Numéro WhatsApp commercial de MinVa (site vitrine), format international sans +
   WHATSAPP_COMMERCIAL: '2250749660643',
 

@@ -11,7 +11,7 @@
     var slug = (morceaux.pop() || '').toLowerCase();
     var base = '/' + morceaux.join('/') + (morceaux.length ? '/' : '');
     if (/^[a-z0-9]([a-z0-9-]{1,48}[a-z0-9])$/.test(slug)) location.replace(base + 'site.html?o=' + slug);
-    else location.replace(base + 'index.html');
+    else location.replace('https://minva-associations.higgsfield.app/');
   })();
 </script>
 </head>

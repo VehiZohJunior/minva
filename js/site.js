@@ -172,7 +172,7 @@
     h += '</main>';
 
     h += '<footer class="s-pied"><div class="s-pied-in"><span>© ' + new Date().getFullYear() + ' ' + esc(o.nom) + '</span>' +
-      '<a class="s-minva" href="index.html" target="_top"><span>Site créé avec</span><img src="assets/horizontal-noir.png" alt="MinVa" width="70" height="22"></a></div></footer>';
+      '<a class="s-minva" href="' + esc((window.MINVA_CONFIG && window.MINVA_CONFIG.URL_VITRINE) || 'index.html') + '" target="_top" rel="noopener"><span>Site créé avec</span><img src="assets/horizontal-noir.png" alt="MinVa" width="70" height="22"></a></div></footer>';
 
     app.innerHTML = h;
     app.removeAttribute('aria-busy');
