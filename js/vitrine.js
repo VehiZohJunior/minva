@@ -91,7 +91,7 @@
     var ex = orgs.slice().sort(function (a, b) { return actifDepuis(a) - actifDepuis(b); })[0];
     if (!ex) { $('v-demo').hidden = true; return; }
     var iframe = $('v-iframe'), themeActuel = ex.theme;
-    iframe.src = 'site.html?o=' + encodeURIComponent(ex.slug) + '&vitrine=1';
+    iframe.src = 'site.html?o=' + encodeURIComponent(ex.slug) + '&vitrine=1' + (MV.mode === 'demo' ? '&demo=1' : '');
     $('v-pastilles').innerHTML = window.MINVA_THEMES.map(function (t) {
       return '<button type="button" class="v-pastille" data-t="' + t.id + '" aria-pressed="' + (t.id === themeActuel) + '" aria-label="Thème ' + esc(t.nom) + '" title="' + esc(t.nom) + '" style="background:' + t.primaire + ';--acc:' + t.accent + '"></button>';
     }).join('');

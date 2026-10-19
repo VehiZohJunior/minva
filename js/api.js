@@ -9,7 +9,9 @@
 (function () {
   var C = window.MINVA_CONFIG || {};
   var O = window.MVO;
-  var REEL = !!(C.SUPABASE_URL && C.SUPABASE_ANON_KEY && window.supabase);
+  // ?demo=1 : aperçu avec les associations d'exemple (données fictives, dans ce navigateur seulement)
+  var DEMO_FORCEE = /[?&]demo=1(&|$)/.test(location.search);
+  var REEL = !DEMO_FORCEE && !!(C.SUPABASE_URL && C.SUPABASE_ANON_KEY && window.supabase);
   var MV = { mode: REEL ? 'reel' : 'demo' };
 
   MV.lienSite = function (slug) {

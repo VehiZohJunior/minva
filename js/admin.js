@@ -253,7 +253,7 @@
       '<aside class="apercu" id="apercu" aria-label="Aperçu du site"><div class="apercu-tete"><b>Aperçu en direct</b><div class="seg" role="group" aria-label="Taille de l’aperçu">' +
       '<button type="button" data-app="tel" aria-pressed="' + (S.appareil === 'tel') + '">Téléphone</button><button type="button" data-app="ordi" aria-pressed="' + (S.appareil === 'ordi') + '">Ordinateur</button></div>' +
       '<button type="button" class="btn-icone btn-apercu-mobile" id="apercu-fermer" aria-label="Fermer l’aperçu" style="color:inherit">' + ico('fermer', 'ico-lg') + '</button></div>' +
-      '<div class="cadre ' + (S.appareil === 'tel' ? 'tel' : '') + '" id="cadre"><iframe id="apercu-cadre" title="Aperçu de votre site" src="site.html?o=' + encodeURIComponent(S.org.slug) + '&apercu=1"></iframe></div></aside></div>';
+      '<div class="cadre ' + (S.appareil === 'tel' ? 'tel' : '') + '" id="cadre"><iframe id="apercu-cadre" title="Aperçu de votre site" src="site.html?o=' + encodeURIComponent(S.org.slug) + '&apercu=1' + (MV.mode === 'demo' ? '&demo=1' : '') + '"></iframe></div></aside></div>';
 
     Array.prototype.forEach.call(c.querySelectorAll('[data-ong]'), function (b) {
       b.onclick = function () { S.ongletSite = b.dataset.ong; Array.prototype.forEach.call(c.querySelectorAll('[data-ong]'), function (x) { x.setAttribute('aria-selected', String(x === b)); }); rendreOnglet(); };
