@@ -105,6 +105,31 @@
   O.accord = function (o, masculin, feminin) { return O.typeDe(o)[2] === 'f' ? feminin : masculin; };
   O.maj = function (s) { return s.charAt(0).toUpperCase() + s.slice(1); };
   O.TYPES_ACTU = { actu: 'Actualité', evenement: 'Événement', besoin: 'Besoin', rapport: 'Rapport' };
+  // Indice de vitalité MinVa (0 à 100) : un site complet, vivant et transparent inspire confiance.
+  // d = { org, actualites, evenements, documents, depenses } ; renvoie { score, conseils: [[points, texte, page]] }
+  O.vitalite = function (d) {
+    var o = d.org || {}, c = o.contact || {}, pts = 0, conseils = [];
+    function critere(ok, points, conseil, page) { if (ok) pts += points; else conseils.push([points, conseil, page]); }
+    var actus = d.actualites || [], recente = actus[0] ? O.joursDepuis(actus[0].created_at) : Infinity;
+    var trimestre = actus.filter(function (a) { return O.joursDepuis(a.created_at) <= 90; }).length;
+    var docs = (d.documents || []).filter(function (x) { return x.statut === 'verifie'; }).length;
+    critere(o.logo_url || o.couverture_url, 5, 'Ajoutez votre logo ou une photo de couverture.', 'site');
+    critere(o.slogan, 5, 'Écrivez votre slogan.', 'site');
+    critere(o.mission && o.apropos, 10, 'Présentez votre mission et votre histoire.', 'site');
+    critere(c.whatsapp, 5, 'Indiquez votre numéro WhatsApp.', 'site');
+    if (recente <= 7) pts += 20; else if (recente <= 30) { pts += 12; conseils.push([8, 'Publiez une actualité cette semaine : un site actif rassure.', 'actualites']); }
+    else if (recente <= 90) { pts += 5; conseils.push([15, 'Votre dernière actualité date de plus d’un mois. Racontez ce que vous faites.', 'actualites']); }
+    else conseils.push([20, 'Publiez votre première actualité, avec une photo.', 'actualites']);
+    critere(trimestre >= 6, 10, 'Publiez régulièrement : au moins 2 actualités par mois.', 'actualites');
+    pts += Math.min(15, docs * 3); if (docs < 5) conseils.push([Math.min(15, (5 - docs) * 3), 'Envoyez vos documents officiels pour les faire vérifier.', 'documents']);
+    critere(o.statut_verification === 'verifie', 5, 'Obtenez le badge « Vérifié par MinVa » (5 documents vérifiés).', 'documents');
+    critere((d.depenses || []).some(function (x) { return O.joursDepuis(x.date_depense) <= 180; }), 10, 'Montrez où va l’argent : ajoutez vos dépenses dans Transparence.', 'transparence');
+    critere((d.evenements || []).some(function (e) { return O.joursDepuis(e.debut) <= 60; }), 5, 'Annoncez votre prochain événement dans l’agenda.', 'agenda');
+    critere(c.orange || c.mtn || c.moov || c.wave || c.lien_wave, 5, 'Ajoutez vos numéros Mobile Money pour recevoir des dons.', 'site');
+    critere((o.equipe || []).length, 5, 'Présentez les membres de votre bureau.', 'besoins');
+    conseils.sort(function (a, b) { return b[0] - a[0]; });
+    return { score: Math.min(100, pts), conseils: conseils };
+  };
   O.TYPES_BESOIN = { financement: 'Financement', benevoles: 'Bénévoles', materiel: 'Matériel', formation: 'Formation', partenariat: 'Partenariat' };
   O.DOCS = [
     ['statuts', 'Statuts signés'],

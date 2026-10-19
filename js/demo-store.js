@@ -4,7 +4,7 @@
 // navigateur (localStorage). Organisations et personnes FICTIVES.
 // =====================================================================
 (function () {
-  var CLE = 'minva-demo-v3';
+  var CLE = 'minva-demo-v4';
   var jour = 86400000;
   function il_y_a(j, h) { return new Date(Date.now() - j * jour - (h || 0) * 3600000).toISOString(); }
   function dansJours(j) { return new Date(Date.now() + j * jour).toISOString().slice(0, 10); }
@@ -15,7 +15,7 @@
     var o1 = uid(), o2 = uid(), o3 = uid(), p1 = uid(), p2 = uid(), p3 = uid(), e1 = uid(), e2 = uid();
     function dansH(j, h) { return new Date(new Date().setHours(0, 0, 0, 0) + j * jour + h * 3600000).toISOString(); }
     return {
-      version: 3,
+      version: 4,
       organisations: [
         { id: o1, slug: 'cfv-daloa', nom: 'Coopérative des femmes vivrières de Daloa', sigle: 'CFV', type_structure: 'cooperative', secteur: 'agriculture', ville: 'Daloa', region: 'Haut-Sassandra', annee_creation: 2014,
           slogan: 'Nourrir nos familles, faire vivre nos villages.',
@@ -23,6 +23,9 @@
           apropos: "Créée en 2014 par des productrices de Daloa, la coopérative achète la récolte de ses membres au juste prix, la stocke et la revend en gros aux commerçants d'Abidjan. Elle finance aussi une tontine qui paie les frais de scolarité des enfants.",
           zone: 'Daloa et 7 villages alentour', langues: 'Bété, dioula, français', beneficiaires: 340, beneficiaires_label: 'personnes à charge', membres: 86,
           theme: 'kita', logo_url: null, couverture_url: null, rubriques: Object.assign({}, RUB),
+          modules: { horaires: [{ jour: 'Lundi', heure: '07:00', libelle: 'Réception des récoltes au magasin' }, { jour: 'Samedi', heure: '08:00', libelle: 'Vente directe aux familles' }],
+            benevolat: [{ titre: 'Aide à la comptabilité', competence: 'Comptable ou gestionnaire', detail: 'Deux heures par mois pour vérifier le registre.' }],
+            lieux: [{ nom: 'Magasin de la coopérative', type: 'Siège', lat: 6.8774, lng: -6.4502, detail: 'Quartier Tazibouo' }, { nom: 'Champ collectif de Zoukougbeu', type: 'Champ', lat: 6.7650, lng: -6.8610, detail: '12 hectares de manioc' }] },
           besoins: [{ type: 'financement', titre: 'Magasin de stockage', detail: 'Il manque 750 000 FCFA pour terminer la toiture.' }, { type: 'formation', titre: 'Gestion de stock', detail: 'Une formation à la tenue d’un registre de stock.' }],
           equipe: [{ role: 'Présidente', nom: 'Awa Gnahoré' }, { role: 'Trésorière', nom: 'Rosine Zadi' }, { role: 'Secrétaire', nom: 'Mariam Koné' }],
           contact: { telephone: '+225 07 00 00 00 11', whatsapp: '2250700000011', email: 'cfv.daloa@exemple.ci', facebook: '', adresse: 'Quartier Tazibouo, Daloa', orange: '07 00 00 00 11', mtn: '05 00 00 00 11', moov: '', wave: '07 00 00 00 11', lien_wave: '' },
@@ -117,6 +120,21 @@
         }
         return l;
       })(),
+      depenses: [
+        { id: uid(), org_id: o1, projet_id: p1, libelle: 'Ciment et fer pour les murs du magasin', montant: 640000, date_depense: dansJours(-40), justificatif_url: null, created_at: il_y_a(40) },
+        { id: uid(), org_id: o1, projet_id: p1, libelle: 'Main-d’œuvre des maçons (3 semaines)', montant: 300000, date_depense: dansJours(-20), justificatif_url: null, created_at: il_y_a(20) },
+        { id: uid(), org_id: o1, projet_id: null, libelle: 'Transport des récoltes vers Abidjan', montant: 85000, date_depense: dansJours(-9), justificatif_url: null, created_at: il_y_a(9) }
+      ],
+      produits: [
+        { id: uid(), org_id: o1, nom: 'Attiéké frais', description: 'Préparé chaque matin par les membres.', prix: 500, unite: 'le sachet', photo_url: null, disponible: true, created_at: il_y_a(30) },
+        { id: uid(), org_id: o1, nom: 'Manioc', description: 'Vente en gros aux commerçants.', prix: 15000, unite: 'le sac de 100 kg', photo_url: null, disponible: true, created_at: il_y_a(31) },
+        { id: uid(), org_id: o1, nom: 'Gari', description: 'Semoule de manioc séchée.', prix: 1000, unite: 'le kg', photo_url: null, disponible: false, created_at: il_y_a(32) }
+      ],
+      matchs: [],
+      sondages: [
+        { id: uid(), org_id: o1, question: 'Quel jour préférez-vous pour la vente directe ?', options: ['Samedi matin', 'Dimanche après la messe', 'Mercredi soir'], code: '', ouvert: true, resultats_publics: true, fin: null, created_at: il_y_a(3) }
+      ],
+      votes: [],
       erreurs_client: [
         { id: uid(), application: 'admin', message: 'TypeError: Failed to fetch (connexion coupée pendant l’envoi d’une photo)', page: 'admin.html#actualites', org_id: o2, created_at: il_y_a(0, 9) }
       ]
@@ -125,7 +143,7 @@
 
   var D = {
     lire: function () {
-      try { var s = JSON.parse(localStorage.getItem(CLE)); if (s && s.version === 3) return s; } catch (e) {}
+      try { var s = JSON.parse(localStorage.getItem(CLE)); if (s && s.version === 4) return s; } catch (e) {}
       var g = graine(); D.ecrire(g); return g;
     },
     ecrire: function (db) {

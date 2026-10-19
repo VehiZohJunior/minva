@@ -23,6 +23,7 @@
   // Moyens de paiement Mobile Money : [clé dans contact, nom affiché, couleur du repère]
   var MOYENS = [['orange', 'Orange Money', '#FF7900'], ['mtn', 'MTN MoMo', '#FFCB05'], ['moov', 'Moov Money', '#0093DD'], ['wave', 'Wave', '#1DC8F2']];
   var TTS = 'speechSynthesis' in window && typeof window.SpeechSynthesisUtterance === 'function';
+  var ORDRE_JOURS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche', 'Chaque jour'];
 
   function waLien(num, texte) {
     var n = String(num || '').replace(/[^0-9]/g, '');
@@ -84,14 +85,23 @@
     var aVenir = (d.evenements || []).filter(function (e) { return new Date(e.fin || e.debut) >= maintenant; });
     var passes = (d.evenements || []).filter(function (e) { return new Date(e.fin || e.debut) < maintenant; }).reverse().slice(0, 3);
     var moyens = moyensActifs(contact);
+    var mod = o.modules || {};
+    var produits = d.produits || [], matchs = d.matchs || [], depenses = d.depenses || [], sondages = (d.sondages || []).filter(function (x) { return x.ouvert || O.joursDepuis(x.created_at) <= 60; });
 
     var montrer = {
       apropos: r.apropos !== false && (o.mission || o.apropos),
+      horaires: r.horaires !== false && (mod.horaires || []).length,
       agenda: r.agenda !== false && (aVenir.length || passes.length),
+      matchs: r.matchs !== false && matchs.length,
       actualites: r.actualites !== false && d.actualites.length,
+      catalogue: r.catalogue !== false && produits.length,
       projets: r.projets !== false && d.projets.length,
+      transparence: r.transparence !== false && depenses.length,
       don: r.dons !== false && (moyens.length || contact.lien_wave),
       besoins: r.besoins !== false && (o.besoins || []).length,
+      benevoles: r.benevoles !== false && (mod.benevolat || []).length,
+      sondages: r.sondages !== false && sondages.length,
+      carte: r.carte !== false && (mod.lieux || []).some(function (l) { return isFinite(l.lat) && isFinite(l.lng); }),
       galerie: r.galerie !== false && photos.length >= 3,
       documents: r.documents !== false && (docsVerifies.length || verifiee),
       equipe: r.equipe !== false && (o.equipe || []).length,
@@ -99,7 +109,7 @@
       contact: r.contact !== false && (contact.telephone || contact.whatsapp || contact.email || contact.facebook || contact.adresse)
     };
     var soutenir = montrer.don ? '#don' : montrer.projets ? '#projets' : montrer.besoins ? '#besoins' : '';
-    var noms = { apropos: 'À propos', agenda: 'Agenda', actualites: 'Actualités', projets: 'Projets', don: 'Faire un don', besoins: 'Nous aider', documents: 'Confiance', equipe: 'Bureau', contact: 'Contact' };
+    var noms = { apropos: 'À propos', agenda: 'Agenda', matchs: 'Matchs', actualites: 'Actualités', catalogue: 'Produits', projets: 'Projets', transparence: 'Transparence', don: 'Faire un don', besoins: 'Nous aider', documents: 'Confiance', equipe: 'Bureau', contact: 'Contact' };
     var nav = Object.keys(noms).filter(function (k) { return montrer[k]; }).slice(0, 6)
       .map(function (k) { return '<a href="#' + k + '">' + noms[k] + '</a>'; }).join('');
 
@@ -137,8 +147,10 @@
     if (o.membres) faits.push(['<span class="ico-lg">' + ico('equipe', 'ico-lg') + '</span>', O.nb(o.membres), 'membres']);
     var derniere = d.actualites[0];
     if (derniere && O.joursDepuis(derniere.created_at) <= 30) faits.push(['<span class="s-pastille-vie" aria-hidden="true"></span>', O.accord(o, 'Actif', 'Active'), 'dernière nouvelle ' + O.quand(derniere.created_at)]);
+    var vit = O.vitalite({ org: o, actualites: d.actualites, evenements: d.evenements, documents: d.documents, depenses: depenses });
+    if (vit.score >= 70) faits.push(['<span class="ico-lg">' + ico('etincelle', 'ico-lg') + '</span>', 'Vitalité ' + vit.score + '/100', vit.score >= 85 ? 'indice MinVa · très ' + O.accord(o, 'actif', 'active') : 'indice MinVa']);
     if (faits.length >= 2) {
-      h += '<div class="s-passeport"><ul aria-label="' + esc(O.maj(O.typeTexte(o, 'le'))) + ' en bref">' + faits.slice(0, 5).map(function (f) { return '<li>' + f[0] + '<div><b>' + esc(f[1]) + '</b><span>' + esc(f[2]) + '</span></div></li>'; }).join('') + '</ul></div>';
+      h += '<div class="s-passeport"><ul aria-label="' + esc(O.maj(O.typeTexte(o, 'le'))) + ' en bref">' + faits.slice(0, 6).map(function (f) { return '<li>' + f[0] + '<div><b>' + esc(f[1]) + '</b><span>' + esc(f[2]) + '</span></div></li>'; }).join('') + '</ul></div>';
     }
 
     h += '<main>';
@@ -150,12 +162,43 @@
         (o.annee_creation ? '<dt>Création</dt><dd>' + o.annee_creation + '</dd>' : '') + '</dl></div></div></section>';
     }
 
+    // ----- Horaires réguliers (célébrations, entraînements, permanences…) -----
+    if (montrer.horaires) {
+      var parJour = {};
+      mod.horaires.forEach(function (x) { (parJour[x.jour] = parJour[x.jour] || []).push(x); });
+      var jours = Object.keys(parJour).sort(function (a, b) { return (ORDRE_JOURS.indexOf(a) + 99) % 99 - (ORDRE_JOURS.indexOf(b) + 99) % 99; });
+      h += '<section class="s-section" id="horaires">' + entete(nom, t, 'Nos rendez-vous réguliers', 'Chaque semaine, retrouvez-nous.') + '<div class="s-horaires">' +
+        jours.map(function (j) {
+          return '<div class="s-horaire-jour"><h3>' + esc(j) + '</h3><ul>' + parJour[j].sort(function (a, b) { return String(a.heure).localeCompare(String(b.heure)); })
+            .map(function (x) { return '<li><b class="num">' + esc(String(x.heure || '').replace(':', ' h ')) + '</b><span>' + esc(x.libelle) + '</span></li>'; }).join('') + '</ul></div>';
+        }).join('') + '</div></section>';
+    }
+
     // ----- Agenda : événements à venir, avec inscription -----
     if (montrer.agenda) {
       h += '<section class="s-section" id="agenda">' + entete(nom, t, 'Agenda', aVenir.length ? 'Nos prochains rendez-vous. Inscrivez-vous en un instant.' : 'Nos derniers rendez-vous.') +
         (aVenir.length ? '<div class="s-agenda">' + aVenir.map(function (e) { return carteEvt(e, false); }).join('') + '</div>' : '') +
         (passes.length ? '<details class="s-passes"' + (aVenir.length ? '' : ' open') + '><summary>Rendez-vous passés</summary><div class="s-agenda s-agenda-passe">' + passes.map(function (e) { return carteEvt(e, true); }).join('') + '</div></details>' : '') +
         '</section>';
+    }
+
+    if (montrer.matchs) {
+      var joues = matchs.filter(function (m) { return m.score_nous != null && m.score_eux != null; }).reverse();
+      var prochains = matchs.filter(function (m) { return m.score_nous == null && new Date(m.date_match) >= new Date(Date.now() - 3 * 3600000); });
+      var bilan = { v: 0, n: 0, d: 0 };
+      joues.forEach(function (m) { bilan[m.score_nous > m.score_eux ? 'v' : m.score_nous === m.score_eux ? 'n' : 'd']++; });
+      var ligneMatch = function (m) {
+        var dt = new Date(m.date_match), fait = m.score_nous != null && m.score_eux != null;
+        var res = fait ? (m.score_nous > m.score_eux ? ['V', 'Victoire'] : m.score_nous === m.score_eux ? ['N', 'Match nul'] : ['D', 'Défaite']) : null;
+        var eq1 = m.domicile ? esc(o.sigle || o.nom) : esc(m.adversaire), eq2 = m.domicile ? esc(m.adversaire) : esc(o.sigle || o.nom);
+        var sc1 = m.domicile ? m.score_nous : m.score_eux, sc2 = m.domicile ? m.score_eux : m.score_nous;
+        return '<li class="s-match' + (fait ? ' joue' : '') + '"><div class="s-match-quand"><b>' + JOURS[dt.getDay()] + ' ' + dt.getDate() + ' ' + MOIS[dt.getMonth()] + '</b><span>' + (fait ? (m.competition ? esc(m.competition) : '') : heure(dt) + (m.competition ? ' · ' + esc(m.competition) : '')) + '</span></div>' +
+          '<div class="s-match-affiche"><span>' + eq1 + '</span><b class="num">' + (fait ? sc1 + ' – ' + sc2 : 'contre') + '</b><span>' + eq2 + '</span></div>' +
+          (res ? '<span class="s-match-res r' + res[0] + '" title="' + res[1] + '">' + res[0] + '</span>' : '<span class="s-match-lieu">' + (m.lieu ? ico('lieu') + esc(m.lieu) : '') + '</span>') + '</li>';
+      };
+      h += '<section class="s-section" id="matchs">' + entete(nom, t, 'Matchs et résultats', joues.length ? 'Bilan récent : ' + bilan.v + ' victoire' + (bilan.v > 1 ? 's' : '') + ', ' + bilan.n + ' nul' + (bilan.n > 1 ? 's' : '') + ', ' + bilan.d + ' défaite' + (bilan.d > 1 ? 's' : '') + '.' : 'Venez nous encourager !') +
+        (prochains.length ? '<h3 class="s-sous-titre">Prochains matchs</h3><ul class="s-matchs">' + prochains.map(ligneMatch).join('') + '</ul>' : '') +
+        (joues.length ? '<h3 class="s-sous-titre">Derniers résultats</h3><ul class="s-matchs">' + joues.slice(0, 8).map(ligneMatch).join('') + '</ul>' : '') + '</section>';
     }
 
     if (montrer.actualites) {
@@ -176,6 +219,19 @@
         '</section>';
     }
 
+    if (montrer.catalogue) {
+      var dispo = produits.filter(function (x) { return x.disponible; }).concat(produits.filter(function (x) { return !x.disponible; }));
+      h += '<section class="s-section" id="catalogue">' + entete(nom, t, 'Nos produits', 'Commandez directement par WhatsApp, sans intermédiaire.') + '<div class="s-produits">' +
+        dispo.map(function (x, i) {
+          var waC = waLien(contact.whatsapp, 'Bonjour ' + o.nom + ', je souhaite commander : ' + x.nom + (x.prix != null ? ' (' + O.fcfa(x.prix) + (x.unite ? ' ' + x.unite : '') + ')' : '') + '. Quantité : ');
+          return '<article class="s-produit' + (x.disponible ? '' : ' epuise') + '"><div class="s-produit-visuel">' + (x.photo_url ? '<button type="button" data-photo="' + esc(x.photo_url) + '" aria-label="Voir la photo de ' + esc(x.nom) + '"><img src="' + esc(x.photo_url) + '" alt="" loading="lazy"></button>'
+            : E.svg(nom, t, { largeur: 400, hauteur: 260, sens: 'v', cle: 'pr' + i })) + (x.disponible ? '' : '<span class="s-epuise">Épuisé pour le moment</span>') + '</div>' +
+            '<div class="s-produit-corps"><h3>' + esc(x.nom) + '</h3>' + (x.description ? '<p>' + esc(x.description) + '</p>' : '') +
+            (x.prix != null ? '<div class="s-prix"><b class="num">' + O.nb(x.prix) + '</b> FCFA' + (x.unite ? ' <span>' + esc(x.unite) + '</span>' : '') + '</div>' : '<div class="s-prix"><span>Prix sur demande</span></div>') +
+            (x.disponible && waC ? '<a class="s-btn s-btn-accent s-btn-sm" href="' + waC + '" target="_blank" rel="noopener">' + ico('whatsapp') + 'Commander</a>' : '') + '</div></article>';
+        }).join('') + '</div></section>';
+    }
+
     if (montrer.projets) {
       h += '<section class="s-section" id="projets">' + entete(nom, t, 'Nos projets', 'Chaque franc versé va au projet choisi.') + '<div class="s-projets n' + Math.min(d.projets.length, 3) + '">' +
         d.projets.map(function (p, i) {
@@ -191,6 +247,29 @@
               '<div class="s-meta"><span>' + pct + ' % de ' + O.fcfa(p.objectif) + '</span><span>' + p.donateurs + ' donateur' + (p.donateurs > 1 ? 's' : '') + '</span></div>' : '') +
             bouton + '</article>';
         }).join('') + '</div></section>';
+    }
+
+    // ----- Transparence : où va l'argent -----
+    if (montrer.transparence) {
+      var totalDep = depenses.reduce(function (s2, x) { return s2 + x.montant; }, 0);
+      var anneeEnCours = new Date().getFullYear(), bilanAn = (d.bilanDons || []).find(function (b) { return b.annee === anneeEnCours; });
+      var parProjet = d.projets.filter(function (p) { return depenses.some(function (x) { return x.projet_id === p.id; }); });
+      h += '<section class="s-section" id="transparence">' + entete(nom, t, 'Où va l’argent', 'Nous montrons nos dépenses, justificatifs à l’appui.') +
+        '<div class="s-transp-chiffres"><div><b class="num">' + O.nb(totalDep) + '</b><span>FCFA de dépenses publiées</span></div>' +
+        (bilanAn ? '<div><b class="num">' + O.nb(bilanAn.total) + '</b><span>FCFA de dons reçus en ' + anneeEnCours + ' (' + bilanAn.nombre + ' don' + (bilanAn.nombre > 1 ? 's' : '') + ')</span></div>' : '') +
+        '<div><b class="num">' + depenses.filter(function (x) { return x.justificatif_url; }).length + '/' + depenses.length + '</b><span>dépenses avec justificatif</span></div></div>' +
+        (parProjet.length ? '<div class="s-transp-projets">' + parProjet.map(function (p) {
+          var dep = depenses.filter(function (x) { return x.projet_id === p.id; }).reduce(function (s2, x) { return s2 + x.montant; }, 0);
+          var base = Math.max(p.collecte, dep, 1);
+          return '<div class="s-transp-projet"><h3>' + esc(p.titre) + '</h3><div class="s-barre-transp"><span>Réuni</span><div class="piste-t"><i style="width:' + Math.round(p.collecte / base * 100) + '%"></i></div><b class="num">' + O.fcfa(p.collecte) + '</b></div>' +
+            '<div class="s-barre-transp depense"><span>Dépensé</span><div class="piste-t"><i style="width:' + Math.round(dep / base * 100) + '%"></i></div><b class="num">' + O.fcfa(dep) + '</b></div></div>';
+        }).join('') + '</div>' : '') +
+        '<ul class="s-depenses">' + depenses.slice(0, 12).map(function (x) {
+          var p = x.projet_id && d.projets.find(function (pp) { return pp.id === x.projet_id; });
+          return '<li><span class="s-dep-date">' + new Date(x.date_depense).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) + '</span><div><b>' + esc(x.libelle) + '</b>' + (p ? '<small>' + esc(p.titre) + '</small>' : '') + '</div>' +
+            '<b class="num">' + O.fcfa(x.montant) + '</b>' + (x.justificatif_url ? '<button type="button" class="s-mini-btn" data-photo="' + esc(x.justificatif_url) + '">' + ico('rapport') + 'Justificatif</button>' : '<span></span>') + '</li>';
+        }).join('') + '</ul>' +
+        '<p class="s-transp-lien"><a href="dossier.html?o=' + encodeURIComponent(o.slug) + '&doc=rapport' + (window.MV.mode === 'demo' ? '&demo=1' : '') + '" target="_blank" rel="noopener">' + ico('rapport') + 'Voir notre rapport annuel</a></p></section>';
     }
 
     // ----- Faire un don : Mobile Money direct, puis déclaration ; mur des donateurs -----
@@ -221,9 +300,26 @@
         }).join('') + '</ul></section>';
     }
 
+    if (montrer.benevoles) {
+      h += '<section class="s-section" id="benevoles">' + entete(nom, t, 'Devenez bénévole', 'Votre temps et vos compétences changent des vies.') + '<ul class="s-besoins">' +
+        mod.benevolat.map(function (b, i) {
+          return '<li class="s-besoin"><span class="s-besoin-ico">' + ico('equipe', 'ico-lg') + '</span><div>' + (b.competence ? '<small>' + esc(b.competence) + '</small>' : '') + '<h3>' + esc(b.titre) + '</h3>' + (b.detail ? '<p>' + esc(b.detail) + '</p>' : '') + '</div>' +
+            '<button type="button" class="s-btn s-btn-ligne s-btn-sm" data-benevole="' + i + '">Je me propose</button></li>';
+        }).join('') + '</ul></section>';
+    }
+
+    if (montrer.sondages) {
+      h += '<section class="s-section" id="sondages">' + entete(nom, t, 'Votre avis compte', 'Participez à nos décisions.') + '<div class="s-sondages">' + sondages.map(carteSondage).join('') + '</div></section>';
+    }
+
     if (montrer.galerie) {
       h += '<section class="s-section" id="galerie">' + entete(nom, t, 'En images') + '<div class="s-galerie">' +
         photos.slice(0, 15).map(function (p) { return '<button type="button" data-photo="' + esc(p) + '" aria-label="Voir la photo en grand"><img src="' + esc(p) + '" alt="" loading="lazy"></button>'; }).join('') + '</div></section>';
+    }
+
+    if (montrer.carte) {
+      h += '<section class="s-section" id="carte">' + entete(nom, t, 'Où nous agissons', mod.lieux.length > 1 ? mod.lieux.length + ' lieux sur la carte.' : '') + '<div class="s-carte" id="s-carte" role="region" aria-label="Carte des lieux d’action"><p class="s-carte-attente">Chargement de la carte…</p></div>' +
+        '<ul class="s-lieux">' + mod.lieux.map(function (l) { return '<li>' + ico('lieu') + '<div><b>' + esc(l.nom) + '</b>' + (l.type || l.detail ? '<small>' + esc([l.type, l.detail].filter(Boolean).join(' · ')) + '</small>' : '') + '</div></li>'; }).join('') + '</ul></section>';
     }
 
     if (montrer.documents) {
@@ -276,6 +372,83 @@
     app.removeAttribute('aria-busy');
     brancher();
     majInstallation();
+    if (montrer.carte) carte(mod.lieux, t);
+  }
+
+  // ---------- Sondages ----------
+  function aVote(id) { try { return localStorage.getItem('minva-vote-' + id); } catch (e) { return null; } }
+  function idAppareil() {
+    try { var v = localStorage.getItem('minva-appareil'); if (!v) { v = 'appareil-' + Math.random().toString(36).slice(2) + Date.now().toString(36); localStorage.setItem('minva-appareil', v); } return v; }
+    catch (e) { return 'appareil-' + Math.random().toString(36).slice(2); }
+  }
+  function carteSondage(sd) {
+    var deja = aVote(sd.id), voirRes = sd.compte && (deja || !sd.ouvert);
+    var corps;
+    if (voirRes) {
+      corps = '<ul class="s-resultats">' + sd.options.map(function (op, i) {
+        var n = sd.compte[i] || 0, pct = sd.total ? Math.round(n / sd.total * 100) : 0;
+        return '<li' + (String(i) === deja ? ' class="mon-choix"' : '') + '><div><span>' + esc(op) + '</span><b class="num">' + pct + ' %</b></div><div class="piste-t"><i style="width:' + pct + '%"></i></div></li>';
+      }).join('') + '</ul>';
+    } else if (!sd.ouvert || deja) {
+      corps = '<p class="s-sondage-note">' + (deja ? 'Merci, votre vote est enregistré. ' : 'Ce vote est terminé. ') + (sd.resultats_publics ? '' : 'Les résultats seront communiqués par l’organisation.') + '</p>';
+    } else {
+      corps = '<form class="s-vote" data-sondage="' + esc(sd.id) + '">' + (sd.reserve ? '<div class="grille-champs"><div class="champ"><label>Votre nom</label><input name="nom" type="text" maxlength="80" required></div><div class="champ"><label>Code de vote</label><input name="code" type="text" maxlength="30" required autocomplete="off"></div></div>' : '') +
+        '<div class="s-options">' + sd.options.map(function (op, i) { return '<button type="submit" class="s-option" name="choix" value="' + i + '">' + esc(op) + '</button>'; }).join('') + '</div></form>';
+    }
+    return '<article class="s-sondage"><h3>' + esc(sd.question) + '</h3><p class="s-sondage-meta">' + (sd.reserve ? ico('cle') + 'Réservé aux membres · ' : '') + sd.total + ' vote' + (sd.total > 1 ? 's' : '') + (sd.ouvert ? (sd.fin ? ' · jusqu’au ' + new Date(sd.fin).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }) : '') : ' · terminé') + '</p>' + corps + '</article>';
+  }
+  app.addEventListener('submit', function (e) {
+    var f = e.target.closest('[data-sondage]'); if (!f) return;
+    e.preventDefault();
+    var bouton = e.submitter, id = f.dataset.sondage, sd = donnees.sondages.find(function (x) { return x.id === id; });
+    if (!bouton || !sd) return;
+    var choix = +bouton.value, votant = sd.reserve ? (f.elements.nom.value || '') : idAppareil(), code = sd.reserve ? f.elements.code.value : '';
+    if (sd.reserve && (!votant.trim() || !code.trim())) { O.toast('Indiquez votre nom et le code de vote reçu de l’organisation.', 'erreur'); return; }
+    Array.prototype.forEach.call(f.querySelectorAll('button'), function (b) { b.disabled = true; });
+    window.MV.public.voter(id, choix, votant, code).then(function (maj) {
+      try { localStorage.setItem('minva-vote-' + id, String(choix)); } catch (er) {}
+      Object.assign(sd, maj || {}); rendre(); O.toast('Merci, votre vote est enregistré.');
+    }).catch(function (er) {
+      Array.prototype.forEach.call(f.querySelectorAll('button'), function (b) { b.disabled = false; });
+      if (/déjà voté/i.test(er.message)) { try { localStorage.setItem('minva-vote-' + id, '-1'); } catch (x) {} }
+      O.toast(er.message, 'erreur');
+    });
+  });
+
+  // ---------- Carte (OpenStreetMap, gratuit) ----------
+  var leafletPromesse = null;
+  function chargerLeaflet() {
+    if (window.L) return Promise.resolve(window.L);
+    if (leafletPromesse) return leafletPromesse;
+    leafletPromesse = new Promise(function (ok, ko) {
+      var css = document.createElement('link'); css.rel = 'stylesheet'; css.href = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css'; document.head.appendChild(css);
+      var js = document.createElement('script'); js.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';
+      js.onload = function () { ok(window.L); }; js.onerror = function () { leafletPromesse = null; ko(new Error('carte')); }; document.head.appendChild(js);
+    });
+    return leafletPromesse;
+  }
+  function carte(lieux, t) {
+    var zone = document.getElementById('s-carte'); if (!zone) return;
+    var ok = lieux.filter(function (l) { return isFinite(l.lat) && isFinite(l.lng); });
+    var lancer = function () {
+      chargerLeaflet().then(function (L) {
+        if (!document.getElementById('s-carte')) return;
+        zone.innerHTML = '';
+        var m = L.map(zone, { scrollWheelZoom: false, attributionControl: true });
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '© contributeurs OpenStreetMap' }).addTo(m);
+        var icone = L.divIcon({ className: 's-repere', html: '<span style="background:' + t.accent + ';border-color:' + t.primaire + '"></span>', iconSize: [24, 24], iconAnchor: [12, 24] });
+        var pts = ok.map(function (l) {
+          L.marker([+l.lat, +l.lng], { icon: icone }).addTo(m).bindPopup('<b>' + esc(l.nom) + '</b>' + (l.type ? '<br>' + esc(l.type) : '') + (l.detail ? '<br>' + esc(l.detail) : ''));
+          return [+l.lat, +l.lng];
+        });
+        if (pts.length === 1) m.setView(pts[0], 13); else m.fitBounds(pts, { padding: [30, 30] });
+      }).catch(function () { zone.innerHTML = '<p class="s-carte-attente">La carte n’a pas pu se charger. Vérifiez votre connexion.</p>'; });
+    };
+    // La carte se charge seulement quand on arrive dessus (économie de données)
+    if ('IntersectionObserver' in window) {
+      var obs = new IntersectionObserver(function (e) { if (e[0].isIntersecting) { obs.disconnect(); lancer(); } }, { rootMargin: '200px' });
+      obs.observe(zone);
+    } else lancer();
   }
 
   function boutonEcoute(texte, libelle) {
@@ -317,6 +490,7 @@
     if ((el = e.target.closest('[data-don]'))) { fenetreDon(el.dataset.don); return; }
     if ((el = e.target.closest('[data-inscrire]'))) { fenetreInscription(el.dataset.inscrire); return; }
     if ((el = e.target.closest('[data-adherer]'))) { fenetreAdhesion(); return; }
+    if ((el = e.target.closest('[data-benevole]'))) { var b = ((donnees.org.modules || {}).benevolat || [])[+el.dataset.benevole]; if (b) fenetreAdhesion(b); return; }
     if ((el = e.target.closest('[data-ics]'))) { calendrier(el.dataset.ics); return; }
     if ((el = e.target.closest('[data-partager-evt]'))) { inviter(el.dataset.partagerEvt); return; }
     if ((el = e.target.closest('[data-ecouter]'))) { ecouter(el); return; }
@@ -400,18 +574,18 @@
     });
   }
 
-  function fenetreAdhesion() {
+  function fenetreAdhesion(benevolat) {
     var o = donnees.org;
-    ouvrirAction('Devenir membre',
-      '<form class="pile" id="f-adh" novalidate><p class="note">' + esc(O.maj(O.typeTexte(o, 'le'))) + ' recevra votre demande et vous recontactera.</p>' +
+    ouvrirAction(benevolat ? 'Je me propose : ' + benevolat.titre : 'Devenir membre',
+      '<form class="pile" id="f-adh" novalidate><p class="note">' + esc(O.maj(O.typeTexte(o, 'le'))) + ' recevra votre ' + (benevolat ? 'proposition' : 'demande') + ' et vous recontactera.</p>' +
       champ('m-nom', 'Votre nom complet', 'text', { max: 80 }) + champ('m-tel', 'Votre téléphone (WhatsApp de préférence)', 'tel', { max: 40 }) +
       '<div class="grille-champs">' + champ('m-email', 'Email', 'email', { max: 120, facultatif: true }) + champ('m-ville', 'Ville ou village', 'text', { max: 80, facultatif: true }) + '</div>' +
-      champ('m-msg', 'Pourquoi souhaitez-vous nous rejoindre ?', 'zone', { max: 500, facultatif: true }) +
-      '<button type="submit" class="btn btn-principal btn-bloc" id="m-ok">Envoyer ma demande</button></form>');
+      champ('m-msg', benevolat ? 'Vos compétences et vos disponibilités' : 'Pourquoi souhaitez-vous nous rejoindre ?', 'zone', { max: 500, facultatif: true }) +
+      '<button type="submit" class="btn btn-principal btn-bloc" id="m-ok">' + (benevolat ? 'Envoyer ma proposition' : 'Envoyer ma demande') + '</button></form>');
     envoyer(document.getElementById('f-adh'), document.getElementById('m-ok'), function () {
       return window.MV.public.adherer(o.id, { nom: document.getElementById('m-nom').value, telephone: document.getElementById('m-tel').value, email: document.getElementById('m-email').value,
-        ville: document.getElementById('m-ville').value, message: document.getElementById('m-msg').value })
-        .then(function () { compter('adhesion'); merci('Demande envoyée !', esc(O.maj(O.typeTexte(o, 'le'))) + ' vous recontactera très vite. Merci de votre engagement.'); });
+        ville: document.getElementById('m-ville').value, message: document.getElementById('m-msg').value, objet: benevolat ? 'benevole' : 'membre', competence: benevolat ? benevolat.titre : '' })
+        .then(function () { compter('adhesion'); merci(benevolat ? 'Proposition envoyée !' : 'Demande envoyée !', esc(O.maj(O.typeTexte(o, 'le'))) + ' vous recontactera très vite. Merci de votre engagement.'); });
     });
   }
 

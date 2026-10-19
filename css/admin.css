@@ -278,6 +278,29 @@ body.admin { background:var(--fond-neutre); }
 .sources { list-style:none; margin:0; padding:0; display:grid; gap:var(--space-3); }
 .sources li > div:first-child { display:flex; justify-content:space-between; font-size:14px; margin-bottom:4px; }
 
+/* ---------- Vague 2 : vitalité, transparence, modules ---------- */
+.vitalite-tete { display:flex; gap:var(--space-4); align-items:center; margin-bottom:var(--space-3); }
+.vitalite-tete h2 { margin:0 0 4px; }
+.vitalite-tete .note { margin:0; }
+.vitalite-note { --pct:0; flex:none; width:84px; height:84px; border-radius:50%; display:flex; align-items:baseline; justify-content:center; padding-top:22px; box-sizing:border-box;
+  background:radial-gradient(closest-side, var(--blanc) 78%, transparent 80% 100%), conic-gradient(var(--emeraude) calc(var(--pct) * 1%), var(--gris-filet) 0); }
+.vitalite-note b { font-family:var(--font-serif); font-size:28px; line-height:1; }
+.vitalite-note span { font-size:12px; color:var(--gris-pierre); }
+.vitalite .etapes .rond { width:auto; min-width:34px; padding:0 6px; border-radius:999px; border:1px solid var(--gris-filet); font-size:12px; font-weight:600; color:var(--emeraude); }
+.docs-partenaires { display:grid; gap:var(--space-3); }
+.doc-carte { display:flex; gap:var(--space-3); align-items:flex-start; padding:var(--space-4); border:1px solid var(--gris-filet); border-radius:var(--radius-md); text-decoration:none; color:inherit; }
+.doc-carte:hover { border-color:var(--noir-minva); }
+.doc-carte b { display:block; font-size:15px; }
+.doc-carte span { font-size:13px; color:var(--gris-pierre); }
+.onglets button { display:inline-flex; align-items:center; gap:6px; white-space:nowrap; }
+.pastille-reco { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; padding:1px 6px; border-radius:999px; background:var(--or-soleil); color:var(--noir-minva); }
+.sondage-admin { padding:var(--space-4) 0; border-top:1px solid var(--gris-filet); }
+.sondage-admin:first-child { border-top:0; padding-top:0; }
+.sondage-admin h3 { margin:0 0 var(--space-3); font-size:16px; display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+.sondage-admin .actions { display:flex; flex-wrap:wrap; gap:var(--space-2); align-items:center; margin-top:var(--space-3); }
+.do-liste-admin { margin:0; padding-left:18px; line-height:1.8; }
+#mod-corps .ligne-edit + .ligne-edit, #lm .ligne-edit + .ligne-edit { margin-top:var(--space-2); }
+
 @media (max-width:1180px) {
   .editeur { grid-template-columns:minmax(0, 1fr); }
   .apercu { display:none; position:fixed; inset:0; z-index:60; background:rgba(20,16,13,.85); padding:var(--space-4); }
@@ -321,4 +344,4 @@ body.admin { background:var(--fond-neutre); }
   .barre-enreg { margin:var(--space-4) calc(var(--space-4) * -1) calc(var(--space-4) * -1); padding:var(--space-3) var(--space-4); }
 }
 @media (prefers-reduced-motion:no-preference) { .lat { transition:transform .2s ease; } }
-@media (max-width:480px) { .tuiles { grid-template-columns:1fr 1fr; gap:var(--space-3); } .tuile { padding:var(--space-3) var(--space-4); } .ligne-don { grid-template-columns:1fr; } .ligne-don .actions { grid-column:1; } }
+@media (max-width:480px) { #lm .ligne-edit { grid-template-columns:1fr 1fr !important; } .tuiles { grid-template-columns:1fr 1fr; gap:var(--space-3); } .tuile { padding:var(--space-3) var(--space-4); } .ligne-don { grid-template-columns:1fr; } .ligne-don .actions { grid-column:1; } }

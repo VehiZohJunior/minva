@@ -4,8 +4,8 @@
 // coupe, on montre la dernière version vue. Seules les données PUBLIQUES
 // sont gardées : jamais les données privées des consoles.
 // =====================================================================
-var CACHE = 'minva-sites-v1';
-var PUBLIC_SUPABASE = /\.supabase\.co\/(rest\/v1\/(organisations_publiques|actualites|projets|documents_publics|evenements_publics|dons_publics)\b|storage\/v1\/object\/public\/)/;
+var CACHE = 'minva-sites-v2';
+var PUBLIC_SUPABASE = /\.supabase\.co\/(rest\/v1\/(organisations_publiques|actualites|projets|documents_publics|evenements_publics|dons_publics|depenses|produits|matchs|sondages_publics|dons_bilan)\b|storage\/v1\/object\/public\/)/;
 var BIBLIOTHEQUES = /^https:\/\/(fonts\.googleapis\.com|fonts\.gstatic\.com|cdn\.jsdelivr\.net|cdnjs\.cloudflare\.com)\//;
 var PAGES_PRIVEES = /\/(admin\.html|affiche\.html)/;
 

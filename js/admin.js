@@ -4,7 +4,7 @@
 (function () {
   var O = window.MVO, MV = window.MV, esc = O.esc, ico = O.ico;
   var racine = document.getElementById('racine');
-  var S = { profil: null, org: null, brouillon: null, actus: [], projets: [], docs: [], admins: [], journal: [], dons: [], evts: [], adhesions: [], filtreDons: 'declare', filtreMembres: 'nouvelle', periode: 30,
+  var S = { profil: null, org: null, brouillon: null, actus: [], projets: [], docs: [], admins: [], journal: [], dons: [], evts: [], adhesions: [], depenses: [], produits: [], matchs: [], sondages: [], ongletModule: null, filtreDons: 'declare', filtreMembres: 'nouvelle', periode: 30,
     ongletSite: 'identite', appareil: 'tel', composer: { type: 'actu', fichiers: [], apercus: [] }, envoi: false };
 
   var PAGES = [
@@ -16,6 +16,8 @@
     ['dons', 'Dons', 'coeur'],
     ['besoins', 'Besoins & équipe', 'besoin'],
     ['membres', 'Membres', 'plus'],
+    ['transparence', 'Transparence', 'bouclier'],
+    ['modules', 'Modules', 'boite'],
     ['documents', 'Documents', 'rapport'],
     ['stats', 'Statistiques', 'graph'],
     null,
@@ -88,14 +90,15 @@
       S.profil = r[0]; S.org = r[1]; S.brouillon = JSON.parse(JSON.stringify(r[1]));
       // Agenda, dons et membres : s'ils ne répondent pas (base pas encore à jour), la console fonctionne quand même
       var souple = function (pr) { return pr.catch(function () { return []; }); };
-      return Promise.all([MV.actu.lister(), MV.projet.lister(), MV.doc.lister(), MV.admins.lister(), MV.support.journal(), souple(MV.dons.lister()), souple(MV.evts.lister()), souple(MV.adhesions.lister())]);
+      return Promise.all([MV.actu.lister(), MV.projet.lister(), MV.doc.lister(), MV.admins.lister(), MV.support.journal(), souple(MV.dons.lister()), souple(MV.evts.lister()), souple(MV.adhesions.lister()),
+        souple(MV.depenses.lister()), souple(MV.produits.lister()), souple(MV.matchs.lister()), souple(MV.sondages.lister())]);
     }).then(function (r) {
-      S.actus = r[0]; S.projets = r[1]; S.docs = r[2]; S.admins = r[3]; S.journal = r[4]; S.dons = r[5]; S.evts = r[6]; S.adhesions = r[7];
+      S.actus = r[0]; S.projets = r[1]; S.docs = r[2]; S.admins = r[3]; S.journal = r[4]; S.dons = r[5]; S.evts = r[6]; S.adhesions = r[7]; S.depenses = r[8]; S.produits = r[9]; S.matchs = r[10]; S.sondages = r[11];
       coque(); afficher();
     });
   }
   function recharger(quoi) {
-    var t = { actus: MV.actu.lister, projets: MV.projet.lister, docs: MV.doc.lister, admins: MV.admins.lister, journal: MV.support.journal, org: MV.org.mienne, dons: MV.dons.lister, evts: MV.evts.lister, adhesions: MV.adhesions.lister };
+    var t = { actus: MV.actu.lister, projets: MV.projet.lister, docs: MV.doc.lister, admins: MV.admins.lister, journal: MV.support.journal, org: MV.org.mienne, dons: MV.dons.lister, evts: MV.evts.lister, adhesions: MV.adhesions.lister, depenses: MV.depenses.lister, produits: MV.produits.lister, matchs: MV.matchs.lister, sondages: MV.sondages.lister };
     return t[quoi]().then(function (v) { S[quoi] = v; if (quoi === 'org') S.brouillon = JSON.parse(JSON.stringify(v)); });
   }
 
@@ -147,7 +150,7 @@
     if (page() !== 'site' && modifie()) { S.brouillon = JSON.parse(JSON.stringify(S.org)); }
     majNav();
     var c = document.getElementById('contenu');
-    var rendus = { accueil: pAccueil, site: pSite, actualites: pActus, agenda: pAgenda, projets: pProjets, dons: pDons, besoins: pBesoins, membres: pMembres, documents: pDocuments, stats: pStats, admins: pAdmins, acces: pAcces, parametres: pParametres };
+    var rendus = { accueil: pAccueil, site: pSite, actualites: pActus, agenda: pAgenda, projets: pProjets, dons: pDons, besoins: pBesoins, membres: pMembres, documents: pDocuments, transparence: pTransparence, modules: pModules, stats: pStats, admins: pAdmins, acces: pAcces, parametres: pParametres };
     rendus[page()](c);
     window.scrollTo(0, 0);
   }
@@ -200,7 +203,7 @@
       '<a class="tuile" href="#actualites"><b>' + S.actus.length + '</b><span>actualités' + (derniere ? ' · dernière ' + O.quand(derniere.created_at) : '') + '</span></a>' +
       '<a class="tuile" href="#projets"><b>' + S.projets.length + '</b><span>projets présentés</span></a>' +
       '<a class="tuile" href="#documents"><b>' + docsVerif + '/6</b><span>documents vérifiés</span></a>' +
-      '<a class="tuile" href="#admins"><b>' + S.admins.length + '/3</b><span>administrateurs</span></a></div>' + nouveautes() +
+      '<a class="tuile" href="#admins"><b>' + S.admins.length + '/3</b><span>administrateurs</span></a></div>' + blocVitalite() + nouveautes() +
       '<div class="grille-2"><section class="bloc"><h2>Complétez votre site</h2><div class="progres-tete"><b>' + pct + '%</b><div class="piste" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '" aria-label="Site complété"><i style="width:' + pct + '%"></i></div></div>' +
       '<ul class="etapes">' + et.map(function (e, i) {
         return '<li class="' + (e[0] ? 'fait' : '') + '"><a href="#' + e[2] + '" data-onglet="' + (e[3] || '') + '"><span class="rond">' + (e[0] ? ico('verifie') : '') + '</span><span>' + e[1] + '</span>' + ico('suite') + '</a></li>';
@@ -323,7 +326,9 @@
     } else if (S.ongletSite === 'rubriques') {
       var R = [['apropos', 'À propos', 'Votre mission et votre histoire'], ['actualites', 'Actualités', 'Vos publications, avec photos'], ['projets', 'Projets', 'Vos projets et leur collecte'], ['besoins', 'Nous aider', 'Ce dont vous avez besoin'],
         ['galerie', 'Photos', 'Toutes les photos de vos actualités (à partir de 3)'], ['documents', 'Transparence', 'Vos documents officiels vérifiés'], ['equipe', 'Équipe', 'Les membres de votre bureau'], ['contact', 'Contact', 'WhatsApp, téléphone, email, adresse'],
-        ['agenda', 'Agenda', 'Vos événements, avec inscription en ligne'], ['dons', 'Faire un don', 'Vos numéros Mobile Money et le mur des donateurs'], ['rejoindre', 'Devenir membre', 'Un bouton pour demander à vous rejoindre']];
+        ['agenda', 'Agenda', 'Vos événements, avec inscription en ligne'], ['dons', 'Faire un don', 'Vos numéros Mobile Money et le mur des donateurs'], ['rejoindre', 'Devenir membre', 'Un bouton pour demander à vous rejoindre'],
+        ['transparence', 'Transparence', 'Vos dépenses et justificatifs'], ['catalogue', 'Produits', 'Votre catalogue, commande par WhatsApp'], ['matchs', 'Matchs', 'Calendrier et résultats'], ['horaires', 'Horaires', 'Vos rendez-vous de chaque semaine'],
+        ['benevoles', 'Bénévolat', 'Vos appels à bénévoles'], ['sondages', 'Sondages', 'Les votes ouverts au public ou aux membres'], ['carte', 'Carte', 'Vos lieux d’action sur une carte']];
       var rb = b.rubriques || {};
       h = '<p class="note" style="margin-bottom:8px">Masquez les rubriques dont vous ne voulez pas. Une rubrique vide ne s’affiche jamais, même activée.</p><ul class="rubriques">' +
         R.map(function (r) { return '<li><div><b>' + r[1] + '</b><span>' + r[2] + '</span></div><label class="inter"><input type="checkbox" data-rub="' + r[0] + '"' + (rb[r[0]] !== false ? ' checked' : '') + '><span class="piste-inter"></span><span class="sr">Afficher ' + r[1] + '</span></label></li>'; }).join('') + '</ul>';
@@ -870,7 +875,7 @@
       '<section class="bloc"><div class="bloc-tete"><h2>Demandes</h2>' + filtres('f-membres', S.filtreMembres, [['nouvelle', 'Nouvelles'], ['acceptee', 'Acceptées'], ['refusee', 'Refusées'], ['tous', 'Toutes']]) + '</div>' +
       (liste.length ? '<div class="lignes" id="l-membres">' + liste.map(function (a) {
         var w = waLien(a.telephone, 'Bonjour ' + a.nom + ', merci pour votre demande pour rejoindre ' + S.org.nom + ' !');
-        return '<article class="ligne-membre"><span class="mono">' + esc(O.sigleDe(a.nom).slice(0, 2)) + '</span><div><b>' + esc(a.nom) + '</b>' +
+        return '<article class="ligne-membre"><span class="mono">' + esc(O.sigleDe(a.nom).slice(0, 2)) + '</span><div><b>' + esc(a.nom) + (a.objet === 'benevole' ? ' <span class="badge b-avant">Bénévole' + (a.competence ? ' · ' + esc(a.competence) : '') + '</span>' : '') + '</b>' +
           '<small>' + esc([a.telephone, a.email, a.ville].filter(Boolean).join(' · ')) + ' · ' + O.quand(a.created_at) + '</small>' + (a.message ? '<q>' + esc(a.message) + '</q>' : '') + '</div>' +
           '<div class="actions">' + (w ? '<a class="btn btn-secondaire btn-sm" href="' + w + '" target="_blank" rel="noopener">' + ico('whatsapp') + 'Répondre</a>' : '') +
           (a.statut !== 'acceptee' ? '<button type="button" class="btn btn-principal btn-sm" data-statut="acceptee" data-id="' + a.id + '">Accepter</button>' : '<span class="badge b-verifie">' + ico('verifie') + 'Acceptée</span>') +
@@ -923,6 +928,259 @@
         }).join('') + '</ul>' : '<p class="note">Rien pour l’instant.</p>') +
         '<p class="note" style="margin-top:16px">Astuce : le lien partagé depuis votre console, vos affiches et vos QR codes est reconnu automatiquement. Vous voyez ainsi ce qui marche le mieux.</p></section></div>');
     }).catch(function (e) { var z = c.querySelector('.note'); if (z) z.textContent = 'Les statistiques ne sont pas encore disponibles.'; MV.erreur('admin', e.message); });
+  }
+
+  // =================================================================
+  // INDICE DE VITALITÉ
+  // =================================================================
+  function blocVitalite() {
+    var v = O.vitalite({ org: S.org, actualites: S.actus, evenements: S.evts, documents: S.docs, depenses: S.depenses });
+    var niveau = v.score >= 85 ? 'Excellent : votre site inspire confiance.' : v.score >= 70 ? 'Bien : encore quelques gestes pour être au top.' : v.score >= 40 ? 'Votre site peut mieux faire : suivez les conseils ci-dessous.' : 'Votre site a besoin de vie : commencez par les conseils ci-dessous.';
+    return '<section class="bloc vitalite"><div class="vitalite-tete"><div class="vitalite-note" style="--pct:' + v.score + '"><b>' + v.score + '</b><span>/100</span></div>' +
+      '<div><h2>Indice de vitalité MinVa</h2><p class="note">' + niveau + (v.score >= 70 ? ' Il s’affiche sur votre site.' : ' Il s’affichera sur votre site à partir de 70.') + '</p></div></div>' +
+      (v.conseils.length ? '<ul class="etapes">' + v.conseils.slice(0, 4).map(function (c) { return '<li><a href="#' + c[2] + '"><span class="rond">+' + c[0] + '</span><span>' + esc(c[1]) + '</span>' + ico('suite') + '</a></li>'; }).join('') + '</ul>' : '') + '</section>';
+  }
+
+  // =================================================================
+  // TRANSPARENCE (dépenses, rapport annuel, kit bailleur)
+  // =================================================================
+  function lienDossier(type) { return 'dossier.html?o=' + encodeURIComponent(S.org.slug) + '&doc=' + type + (MV.mode === 'demo' ? '&demo=1' : ''); }
+  function pTransparence(c) {
+    var total = S.depenses.reduce(function (t, x) { return t + x.montant; }, 0), avecJ = S.depenses.filter(function (x) { return x.justificatif_url; }).length;
+    c.innerHTML = tete('Transparence', 'Montrez où va l’argent : chaque dépense publiée, avec la photo du reçu, rassure vos donateurs et vos bailleurs.',
+      '<button type="button" class="btn btn-principal" id="dp-nouveau">' + ico('plus') + 'Ajouter une dépense</button>') +
+      '<div class="tuiles"><div class="tuile"><b>' + O.nb(total) + '</b><span>FCFA de dépenses publiées</span></div><div class="tuile"><b>' + S.depenses.length + '</b><span>dépenses</span></div>' +
+      '<div class="tuile"><b>' + avecJ + '/' + S.depenses.length + '</b><span>avec justificatif</span></div><a class="tuile" href="#dons"><b>' + O.nb(S.dons.filter(function (d) { return d.statut === 'confirme'; }).reduce(function (t, d) { return t + d.montant; }, 0)) + '</b><span>FCFA de dons confirmés</span></a></div>' +
+      '<div class="grille-2"><section class="bloc"><h2>Dépenses publiées</h2><div id="dp-liste">' + (S.depenses.length ? S.depenses.map(function (x) {
+        var pr = x.projet_id && S.projets.find(function (y) { return y.id === x.projet_id; });
+        return '<div class="projet"><h3>' + esc(x.libelle) + '</h3><div class="meta"><span>' + O.fcfa(x.montant) + '</span><span>' + new Date(x.date_depense).toLocaleDateString('fr-FR') + '</span>' + (pr ? '<span>' + esc(pr.titre) + '</span>' : '') + (x.justificatif_url ? '<span>' + ico('verifie') + ' justificatif</span>' : '<span>sans justificatif</span>') + '</div>' +
+          '<div class="actions"><button type="button" class="btn btn-secondaire btn-sm" data-modif="' + x.id + '">' + ico('crayon') + 'Modifier</button><button type="button" class="btn btn-lien" data-suppr="' + x.id + '">Supprimer</button></div></div>';
+      }).join('') : '<div class="vide"><h3>Aucune dépense publiée</h3><p>Commencez par la plus importante : « Achat de ciment pour le magasin, 640 000 FCFA », avec la photo du reçu.</p></div>') + '</div></section>' +
+      '<section class="bloc"><h2>Documents pour vos partenaires</h2><p class="note">Créés automatiquement à partir de votre site. Imprimez-les ou enregistrez-les en PDF pour les envoyer par WhatsApp ou par email.</p>' +
+      '<div class="docs-partenaires"><a class="doc-carte" href="' + lienDossier('rapport') + '" target="_blank" rel="noopener">' + ico('rapport', 'ico-lg') + '<div><b>Rapport annuel</b><span>Chiffres de l’année, faits marquants, événements, dépenses, gouvernance.</span></div></a>' +
+      '<a class="doc-carte" href="' + lienDossier('kit') + '" target="_blank" rel="noopener">' + ico('bouclier', 'ico-lg') + '<div><b>Kit bailleur</b><span>Dossier de présentation : impact, projets et ce qu’il manque, transparence, contacts.</span></div></a>' +
+      '<a class="doc-carte" href="' + lienAffiche() + '" target="_blank" rel="noopener">' + ico('qr', 'ico-lg') + '<div><b>Affiche avec QR code</b><span>Pour votre siège, vos événements et vos partenaires.</span></div></a></div></section></div>';
+    document.getElementById('dp-nouveau').onclick = function () { formDepense(null, c); };
+    var suppr = supprimerAvecConfirmation(function (id) { return MV.depenses.supprimer(id).then(function () { return recharger('depenses'); }).then(function () { pTransparence(c); O.toast('Dépense supprimée.'); }); });
+    document.getElementById('dp-liste').onclick = function (e) {
+      var m = e.target.closest('[data-modif]'); if (m) { formDepense(S.depenses.find(function (x) { return x.id === m.dataset.modif; }), c); return; }
+      suppr(e);
+    };
+  }
+  function champImage(id, url, libelle) {
+    return '<div class="champ"><span class="etiquette">' + libelle + '</span><div class="televerser"><span class="vignette">' + (url ? '<img src="' + esc(url) + '" alt="">' : ico('photo', 'ico-lg')) + '</span>' +
+      '<div class="actions"><label class="btn btn-secondaire btn-sm btn-fichier">' + ico('photo') + (url ? 'Changer' : 'Ajouter une photo') + '<input type="file" accept="image/*" id="' + id + '"></label>' +
+      (url ? '<button type="button" class="btn btn-lien" id="' + id + '-retirer">Retirer</button>' : '') + '</div></div></div>';
+  }
+  function brancherImage(id, etat, dossier) {
+    var inp = document.getElementById(id); if (!inp) return;
+    inp.onchange = function () {
+      if (!inp.files[0]) return; var lbl = inp.closest('label'); lbl.style.opacity = '.6';
+      MV.media.envoyer(inp.files[0], dossier).then(function (url) { etat.url = url; var v = inp.closest('.televerser').querySelector('.vignette'); v.innerHTML = '<img src="' + esc(url) + '" alt="">'; O.toast('Photo prête.'); })
+        .catch(erreur).then(function () { lbl.style.opacity = ''; });
+    };
+    var r = document.getElementById(id + '-retirer'); if (r) r.onclick = function () { etat.url = null; r.closest('.televerser').querySelector('.vignette').innerHTML = ico('photo', 'ico-lg'); r.remove(); };
+  }
+  function formDepense(x, c) {
+    x = x || { libelle: '', montant: '', date_depense: new Date().toISOString().slice(0, 10), projet_id: null, justificatif_url: null };
+    var img = { url: x.justificatif_url };
+    ouvrirFenetre(x.id ? 'Modifier la dépense' : 'Nouvelle dépense',
+      '<div class="champ"><label for="dp-lib">À quoi a servi l’argent ?</label><input id="dp-lib" type="text" maxlength="140" value="' + esc(x.libelle) + '" placeholder="Achat de 40 sacs de ciment"></div>' +
+      '<div class="grille-champs"><div class="champ"><label for="dp-mt">Montant (FCFA)</label><input id="dp-mt" type="number" min="1" inputmode="numeric" value="' + (x.montant || '') + '"></div>' +
+      '<div class="champ"><label for="dp-date">Date</label><input id="dp-date" type="date" value="' + esc(String(x.date_depense).slice(0, 10)) + '"></div></div>' +
+      '<div class="champ"><label for="dp-pr">Projet concerné</label><select id="dp-pr"><option value="">Fonctionnement général</option>' + S.projets.map(function (p) { return '<option value="' + p.id + '"' + (p.id === x.projet_id ? ' selected' : '') + '>' + esc(p.titre) + '</option>'; }).join('') + '</select></div>' +
+      champImage('dp-photo', x.justificatif_url, 'Photo du reçu ou de la facture') + '<p class="note">La photo est visible par les visiteurs de votre site. Cachez les informations personnelles avant de la prendre.</p>',
+      '<button type="button" class="btn btn-secondaire" id="dp-annuler">Annuler</button><button type="button" class="btn btn-principal" id="dp-ok">Enregistrer</button>');
+    brancherImage('dp-photo', img, 'justificatifs');
+    document.getElementById('dp-annuler').onclick = function () { fen.close(); };
+    document.getElementById('dp-ok').onclick = function () {
+      var b = this; occupe(b, true);
+      MV.depenses.enregistrer({ id: x.id, libelle: document.getElementById('dp-lib').value, montant: document.getElementById('dp-mt').value, date_depense: document.getElementById('dp-date').value, projet_id: document.getElementById('dp-pr').value || null, justificatif_url: img.url })
+        .then(function () { return recharger('depenses'); }).then(function () { fen.close(); pTransparence(c); O.toast('Dépense publiée sur votre site.'); })
+        .catch(function (e) { occupe(b, false); erreur(e); });
+    };
+  }
+
+  // =================================================================
+  // MODULES MÉTIER
+  // =================================================================
+  var MODULES = [
+    ['catalogue', 'Produits', 'boite', ['cooperative', 'scoops', 'gie', 'groupement', 'union', 'artisanat', 'agriculture']],
+    ['matchs', 'Matchs', 'sport', ['club', 'ligue', 'federation', 'sport']],
+    ['horaires', 'Horaires', 'horloge', ['congregation', 'communaute', 'religion', 'club', 'cercle']],
+    ['benevolat', 'Bénévolat', 'equipe', ['ong', 'association', 'fondation', 'solidarite', 'sante', 'education', 'collectif']],
+    ['lieux', 'Carte', 'lieu', ['federation', 'reseau', 'confederation', 'ong', 'cooperative', 'union', 'developpement']],
+    ['sondages', 'Sondages', 'graph', []]
+  ];
+  function recommande(m) { var o = S.org; return m[3].indexOf(o.type_structure) >= 0 || m[3].indexOf(o.secteur) >= 0; }
+  function pModules(c) {
+    var ordre = MODULES.slice().sort(function (a, b) { return recommande(b) - recommande(a); });
+    if (!S.ongletModule) S.ongletModule = ordre[0][0];
+    c.innerHTML = tete('Modules', 'Des rubriques en plus, selon ce que fait votre ' + esc(O.typeTexte(S.org)) + '. Une rubrique vide ne s’affiche jamais sur votre site.') +
+      '<section class="bloc"><div class="onglets" role="tablist">' + ordre.map(function (m) { return '<button type="button" role="tab" data-mod="' + m[0] + '" aria-selected="' + (S.ongletModule === m[0]) + '">' + ico(m[2]) + m[1] + (recommande(m) ? ' <span class="pastille-reco">conseillé</span>' : '') + '</button>'; }).join('') +
+      '</div><div id="mod-corps"></div></section>';
+    Array.prototype.forEach.call(c.querySelectorAll('[data-mod]'), function (b) { b.onclick = function () { S.ongletModule = b.dataset.mod; pModules(c); }; });
+    ({ catalogue: mCatalogue, matchs: mMatchs, horaires: mHoraires, benevolat: mBenevolat, lieux: mLieux, sondages: mSondages })[S.ongletModule](document.getElementById('mod-corps'), c);
+  }
+  function enregistrerModules(cle, valeur, c) {
+    var mods = Object.assign({}, S.org.modules || {}); mods[cle] = valeur;
+    return MV.org.maj({ modules: mods }).then(function (o) { S.org = o; S.brouillon = JSON.parse(JSON.stringify(o)); pModules(c); O.toast('Enregistré. Votre site est à jour.'); });
+  }
+
+  // --- Catalogue ---
+  function mCatalogue(z, c) {
+    z.innerHTML = '<p class="note">Vos produits s’affichent sur votre site avec un bouton « Commander » qui ouvre WhatsApp avec un message déjà rédigé.</p>' +
+      '<p><button type="button" class="btn btn-principal btn-sm" id="pd-nouveau">' + ico('plus') + 'Ajouter un produit</button></p><div id="pd-liste">' +
+      (S.produits.length ? S.produits.map(function (x) {
+        return '<div class="projet"><h3>' + esc(x.nom) + (x.disponible ? '' : ' <span class="badge b-neutre">épuisé</span>') + '</h3><div class="meta"><span>' + (x.prix != null ? O.fcfa(x.prix) + (x.unite ? ' ' + esc(x.unite) : '') : 'Prix sur demande') + '</span>' + (x.photo_url ? '<span>' + ico('photo') + ' photo</span>' : '') + '</div>' +
+          '<div class="actions"><button type="button" class="btn btn-secondaire btn-sm" data-modif="' + x.id + '">' + ico('crayon') + 'Modifier</button><button type="button" class="btn btn-lien" data-suppr="' + x.id + '">Supprimer</button></div></div>';
+      }).join('') : '<div class="vide"><h3>Aucun produit</h3><p>Attiéké, savon, pagnes, miel, prestations… Ajoutez ce que vous vendez.</p></div>') + '</div>';
+    document.getElementById('pd-nouveau').onclick = function () { formProduit(null, c); };
+    var suppr = supprimerAvecConfirmation(function (id) { return MV.produits.supprimer(id).then(function () { return recharger('produits'); }).then(function () { pModules(c); O.toast('Produit supprimé.'); }); });
+    document.getElementById('pd-liste').onclick = function (e) { var m = e.target.closest('[data-modif]'); if (m) { formProduit(S.produits.find(function (x) { return x.id === m.dataset.modif; }), c); return; } suppr(e); };
+  }
+  function formProduit(x, c) {
+    x = x || { nom: '', description: '', prix: '', unite: '', photo_url: null, disponible: true };
+    var img = { url: x.photo_url };
+    ouvrirFenetre(x.id ? 'Modifier le produit' : 'Nouveau produit',
+      '<div class="champ"><label for="pd-nom">Nom</label><input id="pd-nom" type="text" maxlength="100" value="' + esc(x.nom) + '" placeholder="Attiéké frais"></div>' +
+      '<div class="champ"><label for="pd-desc">Description</label><textarea id="pd-desc" maxlength="500">' + esc(x.description) + '</textarea></div>' +
+      '<div class="grille-champs"><div class="champ"><label for="pd-prix">Prix (FCFA)</label><input id="pd-prix" type="number" min="0" inputmode="numeric" value="' + (x.prix == null ? '' : x.prix) + '"><span class="aide">Laissez vide pour « prix sur demande ».</span></div>' +
+      '<div class="champ"><label for="pd-unite">Unité</label><input id="pd-unite" type="text" maxlength="30" value="' + esc(x.unite) + '" placeholder="le kg, le sac, la pièce…"></div></div>' +
+      champImage('pd-photo', x.photo_url, 'Photo du produit') + '<label class="case"><input type="checkbox" id="pd-dispo"' + (x.disponible ? ' checked' : '') + '> Disponible en ce moment</label>',
+      '<button type="button" class="btn btn-secondaire" id="pd-annuler">Annuler</button><button type="button" class="btn btn-principal" id="pd-ok">Enregistrer</button>');
+    brancherImage('pd-photo', img, 'catalogue');
+    document.getElementById('pd-annuler').onclick = function () { fen.close(); };
+    document.getElementById('pd-ok').onclick = function () {
+      var b = this; occupe(b, true);
+      MV.produits.enregistrer({ id: x.id, nom: document.getElementById('pd-nom').value, description: document.getElementById('pd-desc').value, prix: document.getElementById('pd-prix').value, unite: document.getElementById('pd-unite').value, photo_url: img.url, disponible: document.getElementById('pd-dispo').checked })
+        .then(function () { return recharger('produits'); }).then(function () { fen.close(); pModules(c); O.toast('Produit enregistré.'); })
+        .catch(function (e) { occupe(b, false); erreur(e); });
+    };
+  }
+
+  // --- Matchs ---
+  function mMatchs(z, c) {
+    z.innerHTML = '<p class="note">Annoncez vos matchs, puis ajoutez le score : le bilan victoires, nuls et défaites se calcule tout seul.</p>' +
+      '<p><button type="button" class="btn btn-principal btn-sm" id="mt-nouveau">' + ico('plus') + 'Ajouter un match</button></p><div id="mt-liste">' +
+      (S.matchs.length ? S.matchs.map(function (m) {
+        var fait = m.score_nous != null && m.score_eux != null;
+        return '<div class="projet"><h3>' + (m.domicile ? 'Nous contre ' : 'Chez ') + esc(m.adversaire) + (fait ? ' · <span class="num">' + m.score_nous + ' – ' + m.score_eux + '</span>' : '') + '</h3><div class="meta"><span>' + esc(O.heureLongue(m.date_match)) + '</span>' + (m.competition ? '<span>' + esc(m.competition) + '</span>' : '') + (m.lieu ? '<span>' + esc(m.lieu) + '</span>' : '') + '</div>' +
+          '<div class="actions"><button type="button" class="btn btn-secondaire btn-sm" data-modif="' + m.id + '">' + ico('crayon') + (fait ? 'Modifier' : 'Ajouter le score') + '</button><button type="button" class="btn btn-lien" data-suppr="' + m.id + '">Supprimer</button></div></div>';
+      }).join('') : '<div class="vide"><h3>Aucun match</h3><p>Ajoutez votre prochain match : vos supporters sauront où et quand venir.</p></div>') + '</div>';
+    document.getElementById('mt-nouveau').onclick = function () { formMatch(null, c); };
+    var suppr = supprimerAvecConfirmation(function (id) { return MV.matchs.supprimer(id).then(function () { return recharger('matchs'); }).then(function () { pModules(c); O.toast('Match supprimé.'); }); });
+    document.getElementById('mt-liste').onclick = function (e) { var m = e.target.closest('[data-modif]'); if (m) { formMatch(S.matchs.find(function (x) { return x.id === m.dataset.modif; }), c); return; } suppr(e); };
+  }
+  function formMatch(m, c) {
+    m = m || { adversaire: '', competition: '', domicile: true, date_match: null, lieu: '', score_nous: null, score_eux: null };
+    var dl = versLocal(m.date_match);
+    ouvrirFenetre(m.id ? 'Modifier le match' : 'Nouveau match',
+      '<div class="grille-champs"><div class="champ"><label for="mt-adv">Adversaire</label><input id="mt-adv" type="text" maxlength="80" value="' + esc(m.adversaire) + '"></div>' +
+      '<div class="champ"><label for="mt-comp">Compétition <span class="facultatif">(facultatif)</span></label><input id="mt-comp" type="text" maxlength="80" value="' + esc(m.competition) + '" placeholder="Championnat de quartier"></div></div>' +
+      '<div class="grille-champs"><div class="champ"><label for="mt-date">Date</label><input id="mt-date" type="date" value="' + dl[0] + '"></div><div class="champ"><label for="mt-h">Heure</label><input id="mt-h" type="time" value="' + (dl[1] || '16:00') + '"></div></div>' +
+      '<div class="champ"><label for="mt-lieu">Lieu</label><input id="mt-lieu" type="text" maxlength="120" value="' + esc(m.lieu) + '"></div>' +
+      '<label class="case"><input type="checkbox" id="mt-dom"' + (m.domicile ? ' checked' : '') + '> Nous jouons à domicile</label>' +
+      '<div class="grille-champs"><div class="champ"><label for="mt-sn">Nos buts / points</label><input id="mt-sn" type="number" min="0" inputmode="numeric" value="' + (m.score_nous == null ? '' : m.score_nous) + '"></div>' +
+      '<div class="champ"><label for="mt-se">Leurs buts / points</label><input id="mt-se" type="number" min="0" inputmode="numeric" value="' + (m.score_eux == null ? '' : m.score_eux) + '"></div></div><p class="note">Laissez le score vide tant que le match n’est pas joué.</p>',
+      '<button type="button" class="btn btn-secondaire" id="mt-annuler">Annuler</button><button type="button" class="btn btn-principal" id="mt-ok">Enregistrer</button>');
+    document.getElementById('mt-annuler').onclick = function () { fen.close(); };
+    document.getElementById('mt-ok').onclick = function () {
+      var b = this, d = document.getElementById('mt-date').value; occupe(b, true);
+      MV.matchs.enregistrer({ id: m.id, adversaire: document.getElementById('mt-adv').value, competition: document.getElementById('mt-comp').value, lieu: document.getElementById('mt-lieu').value, domicile: document.getElementById('mt-dom').checked,
+        date_match: d ? new Date(d + 'T' + (document.getElementById('mt-h').value || '16:00')) : null, score_nous: document.getElementById('mt-sn').value, score_eux: document.getElementById('mt-se').value })
+        .then(function () { return recharger('matchs'); }).then(function () { fen.close(); pModules(c); O.toast('Match enregistré.'); })
+        .catch(function (e) { occupe(b, false); erreur(e); });
+    };
+  }
+
+  // --- Listes simples rangées avec l'organisation (horaires, bénévolat, lieux) ---
+  function listeModule(z, c, cle, cols, vide, aide, extra) {
+    var l = JSON.parse(JSON.stringify((S.org.modules || {})[cle] || []));
+    function rendre() {
+      z.innerHTML = '<p class="note">' + aide + '</p><div class="liste-edit" id="lm">' + l.map(function (x, i) {
+        return '<div class="ligne-edit" style="grid-template-columns:' + cols.map(function (k) { return k[3] || '1fr'; }).join(' ') + ' auto">' + cols.map(function (k) {
+          if (k[2] === 'jour') return '<select data-i="' + i + '" data-k="' + k[0] + '" aria-label="' + k[1] + '">' + ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche', 'Chaque jour'].map(function (j) { return '<option' + (x[k[0]] === j ? ' selected' : '') + '>' + j + '</option>'; }).join('') + '</select>';
+          return '<input type="' + (k[2] || 'text') + '" data-i="' + i + '" data-k="' + k[0] + '" aria-label="' + k[1] + '" placeholder="' + k[1] + '" value="' + esc(x[k[0]] == null ? '' : x[k[0]]) + '"' + (k[2] === 'number' ? ' step="any"' : ' maxlength="160"') + '>';
+        }).join('') + '<button type="button" class="btn-icone" data-ret="' + i + '" aria-label="Retirer">' + ico('corbeille', 'ico-lg') + '</button></div>';
+      }).join('') + (l.length ? '' : '<div class="vide"><p>' + vide + '</p></div>') + '</div>' +
+        '<p style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">' + (l.length < 20 ? '<button type="button" class="btn btn-secondaire btn-sm" id="lm-aj">' + ico('plus') + 'Ajouter une ligne</button>' : '') + (extra ? extra.boutons : '') +
+        '<button type="button" class="btn btn-principal btn-sm" id="lm-ok">Enregistrer</button></p>' + (extra ? extra.apres : '');
+      z.oninput = z.onchange = function (e) { var el = e.target; if (el.dataset.i !== undefined) l[+el.dataset.i][el.dataset.k] = el.type === 'number' ? (el.value === '' ? null : +el.value) : el.value; };
+      z.onclick = function (e) {
+        var b = e.target.closest('button'); if (!b) return;
+        if (b.id === 'lm-aj') { var n = {}; cols.forEach(function (k) { n[k[0]] = k[2] === 'jour' ? 'Dimanche' : ''; }); l.push(n); rendre(); }
+        else if (b.dataset.ret !== undefined) { l.splice(+b.dataset.ret, 1); rendre(); }
+        else if (b.id === 'lm-ok') {
+          occupe(b, true);
+          enregistrerModules(cle, l.filter(function (x) { return String(x[cols[cols.length > 2 && cle === 'horaires' ? 2 : 0][0]] || '').trim(); }), c).catch(function (er) { occupe(b, false); erreur(er); });
+        } else if (extra && extra.clic) extra.clic(b, l, rendre);
+      };
+      if (extra && extra.apresRendu) extra.apresRendu(l, rendre);
+    }
+    rendre();
+  }
+  function mHoraires(z, c) {
+    listeModule(z, c, 'horaires', [['jour', 'Jour', 'jour', '140px'], ['heure', 'Heure', 'time', '120px'], ['libelle', 'Activité (messe, prière, entraînement, permanence…)', 'text', '1fr']],
+      'Aucun horaire pour l’instant.', 'Vos rendez-vous de chaque semaine : célébrations, prières, entraînements, permanences, répétitions…');
+  }
+  function mBenevolat(z, c) {
+    listeModule(z, c, 'benevolat', [['titre', 'Mission (ex. Aide aux devoirs)'], ['competence', 'Profil recherché (ex. Enseignant)'], ['detail', 'Détail (ex. 2 h le mercredi)']],
+      'Aucun appel à bénévoles.', 'Décrivez les missions pour lesquelles vous cherchez de l’aide. Les volontaires remplissent un formulaire ; leurs propositions arrivent dans <a href="#membres">Membres</a>.');
+  }
+  function mLieux(z, c) {
+    listeModule(z, c, 'lieux', [['nom', 'Nom du lieu'], ['type', 'Type (siège, champ, école…)', 'text', '170px'], ['lat', 'Latitude', 'number', '110px'], ['lng', 'Longitude', 'number', '110px']],
+      'Aucun lieu.', 'Ajoutez vos lieux d’action : siège, antennes, champs, écoles, points de vente. Pour la position, rendez-vous sur place et touchez « Ma position actuelle ».',
+      { boutons: '<button type="button" class="btn btn-secondaire btn-sm" id="lm-gps">' + ico('lieu') + 'Ma position actuelle</button>', apres: '',
+        clic: function (b, l, rendre) {
+          if (b.id !== 'lm-gps') return;
+          if (!navigator.geolocation) { O.toast('Votre téléphone ne donne pas sa position.', 'erreur'); return; }
+          occupe(b, true, 'Recherche…');
+          navigator.geolocation.getCurrentPosition(function (pos) {
+            l.push({ nom: 'Nouveau lieu', type: '', lat: +pos.coords.latitude.toFixed(5), lng: +pos.coords.longitude.toFixed(5) }); rendre(); O.toast('Position ajoutée : donnez-lui un nom, puis enregistrez.');
+          }, function () { occupe(b, false); O.toast('Position introuvable. Autorisez la localisation et réessayez.', 'erreur'); }, { enableHighAccuracy: true, timeout: 15000 });
+        } });
+  }
+
+  // --- Sondages ---
+  function mSondages(z, c) {
+    z.innerHTML = '<p class="note">Posez une question à vos visiteurs, ou faites voter vos membres avec un code (élection du bureau, décision d’assemblée générale…).</p>' +
+      '<p><button type="button" class="btn btn-principal btn-sm" id="sd-nouveau">' + ico('plus') + 'Nouveau sondage</button></p><div id="sd-liste">' +
+      (S.sondages.length ? S.sondages.map(function (x) {
+        var tot = x.total || 0;
+        return '<div class="sondage-admin"><h3>' + esc(x.question) + ' ' + (x.ouvert ? '<span class="badge b-ok">ouvert</span>' : '<span class="badge b-neutre">fermé</span>') + (x.code ? ' <span class="badge b-avant">' + ico('cle') + 'code : ' + esc(x.code) + '</span>' : '') + '</h3>' +
+          '<ul class="sources">' + x.options.map(function (op, i) { var n = (x.compte || [])[i] || 0, pct = tot ? Math.round(n / tot * 100) : 0; return '<li><div><span>' + esc(op) + '</span><b>' + n + ' · ' + pct + ' %</b></div><div class="piste"><i style="width:' + pct + '%"></i></div></li>'; }).join('') + '</ul>' +
+          '<div class="actions"><span class="note">' + tot + ' vote' + (tot > 1 ? 's' : '') + '</span>' + (x.code ? '<button type="button" class="btn btn-secondaire btn-sm" data-votants="' + x.id + '">' + ico('equipe') + 'Qui a voté</button>' : '') +
+          '<button type="button" class="btn btn-secondaire btn-sm" data-basculer="' + x.id + '">' + (x.ouvert ? 'Fermer le vote' : 'Rouvrir') + '</button><button type="button" class="btn btn-lien" data-suppr="' + x.id + '">Supprimer</button></div></div>';
+      }).join('') : '<div class="vide"><h3>Aucun sondage</h3><p>Exemple : « Quel jour pour la prochaine réunion ? » avec 3 réponses.</p></div>') + '</div>';
+    document.getElementById('sd-nouveau').onclick = function () { formSondage(c); };
+    var suppr = supprimerAvecConfirmation(function (id) { return MV.sondages.supprimer(id).then(function () { return recharger('sondages'); }).then(function () { pModules(c); O.toast('Sondage supprimé.'); }); });
+    document.getElementById('sd-liste').onclick = function (e) {
+      var b = e.target.closest('[data-basculer]');
+      if (b) { var x = S.sondages.find(function (y) { return y.id === b.dataset.basculer; }); occupe(b, true); MV.sondages.enregistrer(Object.assign({}, x, { ouvert: !x.ouvert })).then(function () { return recharger('sondages'); }).then(function () { pModules(c); }).catch(function (er) { occupe(b, false); erreur(er); }); return; }
+      var v = e.target.closest('[data-votants]');
+      if (v) { MV.sondages.votes(v.dataset.votants).then(function (l) { ouvrirFenetre('Qui a voté', l.length ? '<ul class="do-liste-admin">' + l.map(function (x) { return '<li>' + esc(x.votant) + ' · ' + O.quand(x.created_at) + '</li>'; }).join('') + '</ul>' : '<p class="note">Personne pour l’instant.</p>'); }).catch(erreur); return; }
+      suppr(e);
+    };
+  }
+  function formSondage(c) {
+    ouvrirFenetre('Nouveau sondage',
+      '<div class="champ"><label for="sd-q">Question</label><input id="sd-q" type="text" maxlength="200" placeholder="Quel jour pour la prochaine réunion ?"></div>' +
+      '<div class="champ"><span class="etiquette">Réponses possibles (2 à 8)</span><div class="pile" id="sd-opts">' + [1, 2, 3].map(function (i) { return '<input type="text" maxlength="80" class="sd-opt" placeholder="Réponse ' + i + '">'; }).join('') + '</div>' +
+      '<button type="button" class="btn btn-lien" id="sd-plus" style="align-self:flex-start">+ Ajouter une réponse</button></div>' +
+      '<div class="champ"><label for="sd-code">Code de vote <span class="facultatif">(facultatif)</span></label><input id="sd-code" type="text" maxlength="30" autocomplete="off" placeholder="Ex. AG2026"><span class="aide">Avec un code, seuls ceux qui le connaissent peuvent voter (une fois chacun, avec leur nom). Donnez-le à vos membres en réunion ou sur votre groupe WhatsApp.</span></div>' +
+      '<div class="champ"><label for="sd-fin">Fin du vote <span class="facultatif">(facultatif)</span></label><input id="sd-fin" type="date"></div>' +
+      '<label class="case"><input type="checkbox" id="sd-res" checked> Montrer les résultats sur le site</label>',
+      '<button type="button" class="btn btn-secondaire" id="sd-annuler">Annuler</button><button type="button" class="btn btn-principal" id="sd-ok">Publier le sondage</button>');
+    document.getElementById('sd-plus').onclick = function () { var z = document.getElementById('sd-opts'); if (z.children.length < 8) z.insertAdjacentHTML('beforeend', '<input type="text" maxlength="80" class="sd-opt" placeholder="Réponse ' + (z.children.length + 1) + '">'); };
+    document.getElementById('sd-annuler').onclick = function () { fen.close(); };
+    document.getElementById('sd-ok').onclick = function () {
+      var b = this, fin = document.getElementById('sd-fin').value; occupe(b, true);
+      MV.sondages.enregistrer({ question: document.getElementById('sd-q').value, options: Array.prototype.map.call(document.querySelectorAll('.sd-opt'), function (i) { return i.value; }),
+        code: document.getElementById('sd-code').value, resultats_publics: document.getElementById('sd-res').checked, fin: fin ? new Date(fin + 'T23:59') : null })
+        .then(function () { return recharger('sondages'); }).then(function () { fen.close(); pModules(c); O.toast('Sondage publié sur votre site.'); })
+        .catch(function (e) { occupe(b, false); erreur(e); });
+    };
   }
 
   // ---------------- Lancement ----------------

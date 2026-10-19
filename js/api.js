@@ -50,6 +50,40 @@
       fin: e.fin ? new Date(e.fin).toISOString() : null, lieu: String(e.lieu || '').trim().slice(0, 160), places: pl, inscriptions: e.inscriptions !== false };
   }
   function depuisJours(j) { return new Date(Date.now() - j * 86400000).toISOString(); }
+  function entier(v, min, max) { var n = v === '' || v == null ? null : Math.round(+v); if (n == null || isNaN(n)) return null; return Math.min(max, Math.max(min, n)); }
+  var VERIF = {
+    depenses: function (d) {
+      if (!String(d.libelle || '').trim()) throw new Error('Indiquez à quoi a servi la dépense.');
+      var m = entier(d.montant, 0, 10000000000); if (!m) throw new Error('Indiquez le montant de la dépense.');
+      return { libelle: String(d.libelle).trim().slice(0, 140), montant: m, projet_id: d.projet_id || null, date_depense: d.date_depense || new Date().toISOString().slice(0, 10), justificatif_url: d.justificatif_url || null };
+    },
+    produits: function (d) {
+      if (!String(d.nom || '').trim()) throw new Error('Donnez un nom au produit.');
+      return { nom: String(d.nom).trim().slice(0, 100), description: String(d.description || '').trim().slice(0, 500), prix: entier(d.prix, 0, 10000000000), unite: String(d.unite || '').trim().slice(0, 30), photo_url: d.photo_url || null, disponible: d.disponible !== false };
+    },
+    matchs: function (d) {
+      if (!String(d.adversaire || '').trim()) throw new Error('Indiquez l’adversaire.');
+      if (!d.date_match || isNaN(new Date(d.date_match))) throw new Error('Indiquez la date et l’heure du match.');
+      return { adversaire: String(d.adversaire).trim().slice(0, 80), competition: String(d.competition || '').trim().slice(0, 80), domicile: d.domicile !== false, date_match: new Date(d.date_match).toISOString(),
+        lieu: String(d.lieu || '').trim().slice(0, 120), score_nous: entier(d.score_nous, 0, 999), score_eux: entier(d.score_eux, 0, 999) };
+    },
+    sondages: function (d) {
+      if (!String(d.question || '').trim()) throw new Error('Écrivez la question.');
+      var opts = (d.options || []).map(function (x) { return String(x || '').trim().slice(0, 80); }).filter(Boolean);
+      if (opts.length < 2) throw new Error('Proposez au moins 2 réponses.');
+      return { question: String(d.question).trim().slice(0, 200), options: opts.slice(0, 8), code: String(d.code || '').trim().slice(0, 30), ouvert: d.ouvert !== false, resultats_publics: d.resultats_publics !== false, fin: d.fin ? new Date(d.fin).toISOString() : null };
+    }
+  };
+  var ORDRE = { depenses: 'date_depense', produits: 'created_at', matchs: 'date_match', sondages: 'created_at' };
+  function compteVotes(sd, votes) {
+    var l = votes.filter(function (v) { return v.sondage_id === sd.id; });
+    return { total: l.length, compte: sd.options.map(function (_, i) { return l.filter(function (v) { return v.choix === i; }).length; }) };
+  }
+  function sondagePublic(sd, votes) {
+    var c = compteVotes(sd, votes);
+    return { id: sd.id, org_id: sd.org_id, question: sd.question, options: sd.options, reserve: !!sd.code, ouvert: sd.ouvert && (!sd.fin || new Date(sd.fin) > new Date()),
+      resultats_publics: sd.resultats_publics, fin: sd.fin, created_at: sd.created_at, total: c.total, compte: sd.resultats_publics ? c.compte : null };
+  }
 
   // =================================================================
   // MODE DÉMO
@@ -99,7 +133,12 @@
             .map(function (e) { return Object.assign({ inscrits: (db.inscriptions || []).filter(function (i) { return i.evenement_id === e.id; }).reduce(function (t, i) { return t + i.nombre; }, 0) }, e); })
             .sort(function (a, b) { return new Date(a.debut) - new Date(b.debut); }),
           dons: tri((db.dons || []).filter(function (x) { return x.org_id === o.id && x.statut === 'confirme'; })).slice(0, 12)
-            .map(function (x) { return { id: x.id, projet_id: x.projet_id, nom: x.anonyme ? '' : x.nom, montant: x.montant, message: x.message, created_at: x.created_at }; })
+            .map(function (x) { return { id: x.id, projet_id: x.projet_id, nom: x.anonyme ? '' : x.nom, montant: x.montant, message: x.message, created_at: x.created_at }; }),
+          depenses: (db.depenses || []).filter(function (x) { return x.org_id === o.id; }).sort(function (a, b) { return b.date_depense < a.date_depense ? -1 : 1; }).slice(0, 60),
+          produits: tri((db.produits || []).filter(function (x) { return x.org_id === o.id; })),
+          matchs: (db.matchs || []).filter(function (x) { return x.org_id === o.id && new Date(x.date_match) > new Date(depuisJours(120)); }).sort(function (a, b) { return new Date(a.date_match) - new Date(b.date_match); }),
+          sondages: tri((db.sondages || []).filter(function (x) { return x.org_id === o.id; })).slice(0, 6).map(function (x) { return sondagePublic(x, db.votes || []); }),
+          bilanDons: bilanDemo(db, o.id)
         });
       },
       annuaire: function () {
@@ -214,6 +253,27 @@
       }
     };
 
+    function bilanDemo(db, orgId) {
+      var par = {};
+      (db.dons || []).filter(function (x) { return x.org_id === orgId && x.statut === 'confirme'; }).forEach(function (x) {
+        var a = new Date(x.created_at).getFullYear(); par[a] = par[a] || { org_id: orgId, annee: a, total: 0, nombre: 0 }; par[a].total += x.montant; par[a].nombre++;
+      });
+      return Object.keys(par).map(function (k) { return par[k]; });
+    }
+    // Toutes les données d'une année (rapport annuel, kit bailleur)
+    MV.site.annee = function (slug, annee) {
+      return MV.site.parSlug(slug).then(function (d) {
+        if (!d) return null;
+        var db = D.lire(), id = d.org.id, dans = function (dt) { return new Date(dt).getFullYear() === annee; };
+        d.actualites = tri(db.actualites.filter(function (a) { return a.org_id === id && dans(a.created_at); }));
+        d.evenements = (db.evenements || []).filter(function (e) { return e.org_id === id && dans(e.debut); })
+          .map(function (e) { return Object.assign({ inscrits: (db.inscriptions || []).filter(function (i) { return i.evenement_id === e.id; }).reduce(function (t, i) { return t + i.nombre; }, 0) }, e); });
+        d.depenses = (db.depenses || []).filter(function (x) { return x.org_id === id && dans(x.date_depense); });
+        d.matchs = (db.matchs || []).filter(function (x) { return x.org_id === id && dans(x.date_match); });
+        return d;
+      });
+    };
+
     // Actions des visiteurs (sans compte)
     var orgActive = function (db, id) { return db.organisations.some(function (o) { return o.id === id && o.actif; }); };
     MV.public = {
@@ -234,8 +294,19 @@
       adherer: function (orgId, x) {
         try { var v = verifPersonne(x, 'devenir membre'); } catch (e) { return echec(e.message); }
         var db = D.lire(); if (!orgActive(db, orgId)) return echec('Organisation introuvable.');
-        db.adhesions = db.adhesions || []; db.adhesions.push(Object.assign({ id: D.uid(), org_id: orgId, email: String(x.email || '').trim().slice(0, 120), ville: String(x.ville || '').trim().slice(0, 80), message: String(x.message || '').trim().slice(0, 500), statut: 'nouvelle', created_at: new Date().toISOString() }, v));
+        db.adhesions = db.adhesions || []; db.adhesions.push(Object.assign({ id: D.uid(), org_id: orgId, objet: x.objet === 'benevole' ? 'benevole' : 'membre', competence: String(x.competence || '').slice(0, 120), email: String(x.email || '').trim().slice(0, 120), ville: String(x.ville || '').trim().slice(0, 80), message: String(x.message || '').trim().slice(0, 500), statut: 'nouvelle', created_at: new Date().toISOString() }, v));
         D.ecrire(db); return attendre(true);
+      },
+      voter: function (sondageId, choix, votant, code) {
+        var db = D.lire(), sd = (db.sondages || []).find(function (x) { return x.id === sondageId; });
+        if (!sd || !sd.ouvert || (sd.fin && new Date(sd.fin) < new Date())) return echec('Ce vote est fermé.');
+        if (!(choix >= 0 && choix < sd.options.length)) return echec('Choix invalide.');
+        if (sd.code && String(code || '').trim().toLowerCase() !== sd.code.trim().toLowerCase()) return echec('Code de vote incorrect.');
+        var v = String(votant || '').trim().toLowerCase().slice(0, 120); if (v.length < 2) return echec('Indiquez votre nom pour voter.');
+        db.votes = db.votes || [];
+        if (db.votes.some(function (x) { return x.sondage_id === sondageId && x.votant === v; })) return echec('Vous avez déjà voté.');
+        db.votes.push({ id: D.uid(), sondage_id: sondageId, org_id: sd.org_id, choix: choix, votant: v, created_at: new Date().toISOString() }); D.ecrire(db);
+        return attendre(sondagePublic(sd, db.votes));
       },
       compter: function (orgId, type, source) {
         if (TYPES_STAT.indexOf(type) < 0) return attendre(false);
@@ -294,6 +365,33 @@
       statut: function (id, statut) { var db = D.lire(), o = monOrg(db), a = (db.adhesions || []).find(function (x) { return x.id === id && x.org_id === o.id; }); if (a) a.statut = statut; D.ecrire(db); return attendre(true); },
       supprimer: function (id) { var db = D.lire(), o = monOrg(db); db.adhesions = (db.adhesions || []).filter(function (x) { return !(x.id === id && x.org_id === o.id); }); D.ecrire(db); return attendre(true); }
     };
+    // Listes simples de la vague 2 (dépenses, produits, matchs, sondages) : même fonctionnement pour toutes
+    function crudDemo(table) {
+      return {
+        lister: function () {
+          var db = D.lire(), o = monOrg(db), l = (db[table] || []).filter(function (x) { return x.org_id === o.id; }), k = ORDRE[table];
+          l.sort(function (a, b) { return String(b[k]).localeCompare(String(a[k])); });
+          if (table === 'sondages') l = l.map(function (x) { return Object.assign({}, x, compteVotes(x, db.votes || [])); });
+          return attendre(l);
+        },
+        enregistrer: function (d) {
+          try { var v = VERIF[table](d); } catch (e) { return echec(e.message); }
+          var db = D.lire(), o = monOrg(db); db[table] = db[table] || [];
+          var ex = d.id && db[table].find(function (x) { return x.id === d.id && x.org_id === o.id; });
+          if (ex) Object.assign(ex, v); else db[table].push(Object.assign({ id: D.uid(), org_id: o.id, created_at: new Date().toISOString() }, v));
+          D.ecrire(db); return attendre(true);
+        },
+        supprimer: function (id) {
+          var db = D.lire(), o = monOrg(db);
+          db[table] = (db[table] || []).filter(function (x) { return !(x.id === id && x.org_id === o.id); });
+          if (table === 'sondages') db.votes = (db.votes || []).filter(function (v) { return v.sondage_id !== id; });
+          D.ecrire(db); return attendre(true);
+        }
+      };
+    }
+    MV.depenses = crudDemo('depenses'); MV.produits = crudDemo('produits'); MV.matchs = crudDemo('matchs'); MV.sondages = crudDemo('sondages');
+    MV.sondages.votes = function (id) { var db = D.lire(), o = monOrg(db); return attendre(tri((db.votes || []).filter(function (v) { return v.sondage_id === id && v.org_id === o.id; }))); };
+
     MV.stats = {
       lister: function (jours) {
         var db = D.lire(), o = monOrg(db), min = new Date(Date.now() - (jours || 30) * 86400000).toISOString().slice(0, 10);
@@ -322,6 +420,7 @@
     if (/slug_check|check constraint.*slug/i.test(m)) return 'Lien invalide : lettres minuscules, chiffres et tirets, 3 caractères minimum.';
     if (/Failed to fetch|NetworkError/i.test(m)) return 'Pas de connexion internet. Réessayez dans un instant.';
     if (/Complet/i.test(m)) return 'Complet : il ne reste plus assez de places.';
+    var connu = /(Ce vote est fermé\.|Choix invalide\.|Code de vote incorrect\.|Indiquez votre nom pour voter\.|Vous avez déjà voté\.)/.exec(m); if (connu) return connu[1];
     if (/row-level security/i.test(m)) return 'Cette action n’est pas possible pour le moment (inscriptions fermées ou organisation hors ligne).';
     return m;
   }
@@ -372,10 +471,29 @@
         sb.from('projets').select('*').eq('org_id', org.id).eq('actif', true).order('created_at', { ascending: false }),
         sb.from('documents_publics').select('*').eq('org_id', org.id),
         sb.from('evenements_publics').select('*').eq('org_id', org.id).gte('debut', depuisJours(60)).order('debut').limit(30),
-        sb.from('dons_publics').select('*').eq('org_id', org.id).order('created_at', { ascending: false }).limit(12)
+        sb.from('dons_publics').select('*').eq('org_id', org.id).order('created_at', { ascending: false }).limit(12),
+        sb.from('depenses').select('*').eq('org_id', org.id).order('date_depense', { ascending: false }).limit(60),
+        sb.from('produits').select('*').eq('org_id', org.id).order('created_at', { ascending: false }).limit(60),
+        sb.from('matchs').select('*').eq('org_id', org.id).gte('date_match', depuisJours(120)).order('date_match').limit(40),
+        sb.from('sondages_publics').select('*').eq('org_id', org.id).order('created_at', { ascending: false }).limit(6),
+        sb.from('dons_bilan').select('*').eq('org_id', org.id)
       ]);
-      // Agenda et dons : si une table manque, le reste du site s'affiche quand même
-      return { org: org, actualites: ok(r[0]), projets: ok(r[1]), documents: ok(r[2]), evenements: r[3].error ? [] : r[3].data, dons: r[4].error ? [] : r[4].data };
+      // Modules facultatifs : si une table manque, le reste du site s'affiche quand même
+      var souple = function (x) { return x.error ? [] : x.data; };
+      return { org: org, actualites: ok(r[0]), projets: ok(r[1]), documents: ok(r[2]), evenements: souple(r[3]), dons: souple(r[4]),
+        depenses: souple(r[5]), produits: souple(r[6]), matchs: souple(r[7]), sondages: souple(r[8]), bilanDons: souple(r[9]) };
+    },
+    annee: async function (slug, annee) {
+      var d = await MV.site.parSlug(slug); if (!d) return null;
+      var deb = annee + '-01-01', fin = (annee + 1) + '-01-01', id = d.org.id, souple = function (x) { return x.error ? [] : x.data; };
+      var r = await Promise.all([
+        sb.from('actualites').select('*').eq('org_id', id).gte('created_at', deb).lt('created_at', fin).order('created_at', { ascending: false }).limit(500),
+        sb.from('evenements_publics').select('*').eq('org_id', id).gte('debut', deb).lt('debut', fin).order('debut').limit(300),
+        sb.from('depenses').select('*').eq('org_id', id).gte('date_depense', deb).lt('date_depense', fin).limit(1000),
+        sb.from('matchs').select('*').eq('org_id', id).gte('date_match', deb).lt('date_match', fin).limit(300)
+      ]);
+      d.actualites = ok(r[0]); d.evenements = souple(r[1]); d.depenses = souple(r[2]); d.matchs = souple(r[3]);
+      return d;
     },
     annuaire: async function () {
       return ok(await sb.from('organisations_publiques').select('id, slug, nom, sigle, type_structure, secteur, ville, region, slogan, mission, theme, logo_url, beneficiaires, beneficiaires_label, besoins, statut_verification, derniere_actualite').eq('dans_annuaire', true));
@@ -464,7 +582,11 @@
     },
     adherer: async function (orgId, x) {
       var v = verifPersonne(x, 'devenir membre');
-      ok(await sb.from('adhesions').insert(Object.assign({ org_id: orgId, email: String(x.email || '').trim().slice(0, 120), ville: String(x.ville || '').trim().slice(0, 80), message: String(x.message || '').trim().slice(0, 500) }, v))); return true;
+      ok(await sb.from('adhesions').insert(Object.assign({ org_id: orgId, objet: x.objet === 'benevole' ? 'benevole' : 'membre', competence: String(x.competence || '').slice(0, 120), email: String(x.email || '').trim().slice(0, 120), ville: String(x.ville || '').trim().slice(0, 80), message: String(x.message || '').trim().slice(0, 500) }, v))); return true;
+    },
+    voter: async function (sondageId, choix, votant, code) {
+      ok(await sb.rpc('minva_voter', { p_sondage: sondageId, p_choix: choix, p_votant: votant, p_code: code || '' }));
+      return ok(await sb.from('sondages_publics').select('*').eq('id', sondageId).single());
     },
     compter: function (orgId, type, source) {
       if (TYPES_STAT.indexOf(type) < 0) return Promise.resolve(false);
@@ -498,6 +620,28 @@
     statut: async function (id, statut) { ok(await sb.from('adhesions').update({ statut: statut }).eq('id', id)); return true; },
     supprimer: async function (id) { ok(await sb.from('adhesions').delete().eq('id', id)); return true; }
   };
+  function crudReel(table) {
+    return {
+      lister: async function () {
+        var l = ok(await sb.from(table).select('*').eq('org_id', await orgId()).order(ORDRE[table], { ascending: false }).limit(500));
+        if (table === 'sondages' && l.length) {
+          var votes = ok(await sb.from('votes').select('sondage_id, choix').in('sondage_id', l.map(function (x) { return x.id; })));
+          l = l.map(function (x) { return Object.assign({}, x, compteVotes(x, votes)); });
+        }
+        return l;
+      },
+      enregistrer: async function (d) {
+        var v = VERIF[table](d);
+        if (d.id) ok(await sb.from(table).update(v).eq('id', d.id));
+        else ok(await sb.from(table).insert(Object.assign({ org_id: await orgId() }, v)));
+        return true;
+      },
+      supprimer: async function (id) { ok(await sb.from(table).delete().eq('id', id)); return true; }
+    };
+  }
+  MV.depenses = crudReel('depenses'); MV.produits = crudReel('produits'); MV.matchs = crudReel('matchs'); MV.sondages = crudReel('sondages');
+  MV.sondages.votes = async function (id) { return ok(await sb.from('votes').select('*').eq('sondage_id', id).order('created_at', { ascending: false })); };
+
   MV.stats = {
     lister: async function (jours) {
       var min = new Date(Date.now() - (jours || 30) * 86400000).toISOString().slice(0, 10);
