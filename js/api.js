@@ -26,6 +26,30 @@
     return p;
   }
   function tri(liste) { return liste.slice().sort(function (a, b) { return new Date(b.created_at) - new Date(a.created_at); }); }
+  var MOYENS = ['orange', 'mtn', 'moov', 'wave', 'autre'];
+  var TYPES_STAT = ['vue', 'whatsapp', 'partage', 'don', 'inscription', 'adhesion', 'installation', 'ecoute', 'image'];
+  // Vérifications communes aux deux modes (la base refait les mêmes contrôles)
+  function verifDon(d) {
+    var m = Math.round(+d.montant || 0);
+    if (!(m > 0)) throw new Error('Indiquez le montant de votre don.');
+    if (m > 100000000) throw new Error('Montant trop élevé.');
+    return { projet_id: d.projet_id || null, nom: String(d.nom || '').trim().slice(0, 80), anonyme: !!d.anonyme, telephone: String(d.telephone || '').trim().slice(0, 40),
+      montant: m, moyen: MOYENS.indexOf(d.moyen) >= 0 ? d.moyen : 'autre', message: String(d.message || '').trim().slice(0, 300) };
+  }
+  function verifPersonne(x, quoi) {
+    var nom = String(x.nom || '').trim(), tel = String(x.telephone || '').trim();
+    if (!nom || !tel) throw new Error('Indiquez votre nom et votre numéro de téléphone' + (quoi ? ' pour ' + quoi : '') + '.');
+    return { nom: nom.slice(0, 80), telephone: tel.slice(0, 40) };
+  }
+  function verifEvt(e) {
+    if (!String(e.titre || '').trim()) throw new Error('Donnez un titre à l’événement.');
+    if (!e.debut || isNaN(new Date(e.debut))) throw new Error('Indiquez la date et l’heure de début.');
+    if (e.fin && new Date(e.fin) < new Date(e.debut)) throw new Error('La fin doit être après le début.');
+    var pl = e.places === '' || e.places == null ? null : Math.max(1, parseInt(e.places, 10) || 0);
+    return { titre: String(e.titre).trim().slice(0, 120), description: String(e.description || '').trim().slice(0, 1500), debut: new Date(e.debut).toISOString(),
+      fin: e.fin ? new Date(e.fin).toISOString() : null, lieu: String(e.lieu || '').trim().slice(0, 160), places: pl, inscriptions: e.inscriptions !== false };
+  }
+  function depuisJours(j) { return new Date(Date.now() - j * 86400000).toISOString(); }
 
   // =================================================================
   // MODE DÉMO
@@ -70,7 +94,12 @@
           org: publique(o),
           actualites: tri(db.actualites.filter(function (a) { return a.org_id === o.id; })),
           projets: tri(db.projets.filter(function (p) { return p.org_id === o.id && p.actif; })),
-          documents: db.documents.filter(function (d) { return d.org_id === o.id; }).map(function (d) { return { id: d.id, type: d.type, annee: d.annee, statut: d.statut }; })
+          documents: db.documents.filter(function (d) { return d.org_id === o.id; }).map(function (d) { return { id: d.id, type: d.type, annee: d.annee, statut: d.statut }; }),
+          evenements: (db.evenements || []).filter(function (e) { return e.org_id === o.id && new Date(e.fin || e.debut) > new Date(depuisJours(60)); })
+            .map(function (e) { return Object.assign({ inscrits: (db.inscriptions || []).filter(function (i) { return i.evenement_id === e.id; }).reduce(function (t, i) { return t + i.nombre; }, 0) }, e); })
+            .sort(function (a, b) { return new Date(a.debut) - new Date(b.debut); }),
+          dons: tri((db.dons || []).filter(function (x) { return x.org_id === o.id && x.statut === 'confirme'; })).slice(0, 12)
+            .map(function (x) { return { id: x.id, projet_id: x.projet_id, nom: x.anonyme ? '' : x.nom, montant: x.montant, message: x.message, created_at: x.created_at }; })
         });
       },
       annuaire: function () {
@@ -185,6 +214,93 @@
       }
     };
 
+    // Actions des visiteurs (sans compte)
+    var orgActive = function (db, id) { return db.organisations.some(function (o) { return o.id === id && o.actif; }); };
+    MV.public = {
+      don: function (orgId, d) {
+        try { var v = verifDon(d); } catch (e) { return echec(e.message); }
+        var db = D.lire(); if (!orgActive(db, orgId)) return echec('Organisation introuvable.');
+        db.dons = db.dons || []; db.dons.push(Object.assign({ id: D.uid(), org_id: orgId, statut: 'declare', created_at: new Date().toISOString() }, v)); D.ecrire(db); return attendre(true);
+      },
+      inscrire: function (orgId, evtId, x) {
+        try { var v = verifPersonne(x, 'vous inscrire'); } catch (e) { return echec(e.message); }
+        var db = D.lire(), ev = (db.evenements || []).find(function (e) { return e.id === evtId && e.org_id === orgId; });
+        if (!ev || !ev.inscriptions || new Date(ev.fin || ev.debut) < new Date()) return echec('Les inscriptions sont fermées.');
+        var n = Math.min(20, Math.max(1, parseInt(x.nombre, 10) || 1));
+        var pris = (db.inscriptions || []).filter(function (i) { return i.evenement_id === evtId; }).reduce(function (t, i) { return t + i.nombre; }, 0);
+        if (ev.places && pris + n > ev.places) return echec('Complet : il ne reste plus assez de places.');
+        db.inscriptions = db.inscriptions || []; db.inscriptions.push(Object.assign({ id: D.uid(), evenement_id: evtId, org_id: orgId, nombre: n, created_at: new Date().toISOString() }, v)); D.ecrire(db); return attendre(true);
+      },
+      adherer: function (orgId, x) {
+        try { var v = verifPersonne(x, 'devenir membre'); } catch (e) { return echec(e.message); }
+        var db = D.lire(); if (!orgActive(db, orgId)) return echec('Organisation introuvable.');
+        db.adhesions = db.adhesions || []; db.adhesions.push(Object.assign({ id: D.uid(), org_id: orgId, email: String(x.email || '').trim().slice(0, 120), ville: String(x.ville || '').trim().slice(0, 80), message: String(x.message || '').trim().slice(0, 500), statut: 'nouvelle', created_at: new Date().toISOString() }, v));
+        D.ecrire(db); return attendre(true);
+      },
+      compter: function (orgId, type, source) {
+        if (TYPES_STAT.indexOf(type) < 0) return attendre(false);
+        try {
+          var db = D.lire(), jr = new Date().toISOString().slice(0, 10), src = String(source || 'direct').slice(0, 20);
+          db.statistiques = db.statistiques || [];
+          var l = db.statistiques.find(function (x) { return x.org_id === orgId && x.jour === jr && x.type === type && x.source === src; });
+          if (l) l.n++; else db.statistiques.push({ org_id: orgId, jour: jr, type: type, source: src, n: 1 });
+          D.ecrire(db);
+        } catch (e) {}
+        return attendre(true);
+      }
+    };
+
+    // Console : dons, agenda, membres, statistiques
+    MV.dons = {
+      lister: function () { var db = D.lire(), o = monOrg(db); return attendre(tri((db.dons || []).filter(function (x) { return x.org_id === o.id; }))); },
+      statut: function (id, statut) {
+        var db = D.lire(), o = monOrg(db), d = (db.dons || []).find(function (x) { return x.id === id && x.org_id === o.id; });
+        if (!d) return echec('Don introuvable.');
+        var p = d.projet_id && db.projets.find(function (x) { return x.id === d.projet_id && x.org_id === o.id; });
+        if (p && d.statut === 'confirme' && statut !== 'confirme') { p.collecte = Math.max(0, p.collecte - d.montant); p.donateurs = Math.max(0, p.donateurs - 1); }
+        if (p && d.statut !== 'confirme' && statut === 'confirme') { p.collecte += d.montant; p.donateurs += 1; }
+        d.statut = statut; D.ecrire(db); return attendre(true);
+      },
+      supprimer: function (id) {
+        var db = D.lire(), o = monOrg(db), d = (db.dons || []).find(function (x) { return x.id === id && x.org_id === o.id; });
+        if (d && d.statut === 'confirme') { var p = db.projets.find(function (x) { return x.id === d.projet_id; }); if (p) { p.collecte = Math.max(0, p.collecte - d.montant); p.donateurs = Math.max(0, p.donateurs - 1); } }
+        db.dons = (db.dons || []).filter(function (x) { return !(x.id === id && x.org_id === o.id); }); D.ecrire(db); return attendre(true);
+      }
+    };
+    MV.evts = {
+      lister: function () {
+        var db = D.lire(), o = monOrg(db);
+        return attendre((db.evenements || []).filter(function (e) { return e.org_id === o.id; })
+          .map(function (e) { return Object.assign({ inscrits: (db.inscriptions || []).filter(function (i) { return i.evenement_id === e.id; }).reduce(function (t, i) { return t + i.nombre; }, 0) }, e); })
+          .sort(function (a, b) { return new Date(b.debut) - new Date(a.debut); }));
+      },
+      enregistrer: function (e) {
+        try { var v = verifEvt(e); } catch (er) { return echec(er.message); }
+        var db = D.lire(), o = monOrg(db); db.evenements = db.evenements || [];
+        var ex = e.id && db.evenements.find(function (x) { return x.id === e.id && x.org_id === o.id; });
+        if (ex) Object.assign(ex, v); else db.evenements.push(Object.assign({ id: D.uid(), org_id: o.id, created_at: new Date().toISOString() }, v));
+        D.ecrire(db); return attendre(true);
+      },
+      supprimer: function (id) {
+        var db = D.lire(), o = monOrg(db);
+        db.evenements = (db.evenements || []).filter(function (e) { return !(e.id === id && e.org_id === o.id); });
+        db.inscriptions = (db.inscriptions || []).filter(function (i) { return i.evenement_id !== id; }); D.ecrire(db); return attendre(true);
+      },
+      inscrits: function (evtId) { var db = D.lire(), o = monOrg(db); return attendre(tri((db.inscriptions || []).filter(function (i) { return i.evenement_id === evtId && i.org_id === o.id; }))); },
+      retirerInscrit: function (id) { var db = D.lire(), o = monOrg(db); db.inscriptions = (db.inscriptions || []).filter(function (i) { return !(i.id === id && i.org_id === o.id); }); D.ecrire(db); return attendre(true); }
+    };
+    MV.adhesions = {
+      lister: function () { var db = D.lire(), o = monOrg(db); return attendre(tri((db.adhesions || []).filter(function (x) { return x.org_id === o.id; }))); },
+      statut: function (id, statut) { var db = D.lire(), o = monOrg(db), a = (db.adhesions || []).find(function (x) { return x.id === id && x.org_id === o.id; }); if (a) a.statut = statut; D.ecrire(db); return attendre(true); },
+      supprimer: function (id) { var db = D.lire(), o = monOrg(db); db.adhesions = (db.adhesions || []).filter(function (x) { return !(x.id === id && x.org_id === o.id); }); D.ecrire(db); return attendre(true); }
+    };
+    MV.stats = {
+      lister: function (jours) {
+        var db = D.lire(), o = monOrg(db), min = new Date(Date.now() - (jours || 30) * 86400000).toISOString().slice(0, 10);
+        return attendre((db.statistiques || []).filter(function (x) { return x.org_id === o.id && x.jour >= min; }));
+      }
+    };
+
     MV.erreur = function (app, message) {
       try { var db = D.lire(); db.erreurs_client.push({ id: D.uid(), application: app, message: String(message).slice(0, 2000), page: location.pathname + location.hash, created_at: new Date().toISOString() }); db.erreurs_client = db.erreurs_client.slice(-100); D.ecrire(db); } catch (e) {}
     };
@@ -205,6 +321,8 @@
     if (/duplicate key.*slug/i.test(m)) return 'Ce lien est déjà pris.';
     if (/slug_check|check constraint.*slug/i.test(m)) return 'Lien invalide : lettres minuscules, chiffres et tirets, 3 caractères minimum.';
     if (/Failed to fetch|NetworkError/i.test(m)) return 'Pas de connexion internet. Réessayez dans un instant.';
+    if (/Complet/i.test(m)) return 'Complet : il ne reste plus assez de places.';
+    if (/row-level security/i.test(m)) return 'Cette action n’est pas possible pour le moment (inscriptions fermées ou organisation hors ligne).';
     return m;
   }
   async function fonction(nom, corps) {
@@ -252,9 +370,12 @@
       var r = await Promise.all([
         sb.from('actualites').select('*').eq('org_id', org.id).order('created_at', { ascending: false }).limit(60),
         sb.from('projets').select('*').eq('org_id', org.id).eq('actif', true).order('created_at', { ascending: false }),
-        sb.from('documents_publics').select('*').eq('org_id', org.id)
+        sb.from('documents_publics').select('*').eq('org_id', org.id),
+        sb.from('evenements_publics').select('*').eq('org_id', org.id).gte('debut', depuisJours(60)).order('debut').limit(30),
+        sb.from('dons_publics').select('*').eq('org_id', org.id).order('created_at', { ascending: false }).limit(12)
       ]);
-      return { org: org, actualites: ok(r[0]), projets: ok(r[1]), documents: ok(r[2]) };
+      // Agenda et dons : si une table manque, le reste du site s'affiche quand même
+      return { org: org, actualites: ok(r[0]), projets: ok(r[1]), documents: ok(r[2]), evenements: r[3].error ? [] : r[3].data, dons: r[4].error ? [] : r[4].data };
     },
     annuaire: async function () {
       return ok(await sb.from('organisations_publiques').select('id, slug, nom, sigle, type_structure, secteur, ville, region, slogan, mission, theme, logo_url, beneficiaires, beneficiaires_label, besoins, statut_verification, derniere_actualite').eq('dans_annuaire', true));
@@ -332,6 +453,55 @@
     creer: async function (d) {
       if (!d.nom_organisation || !d.responsable || !d.telephone) throw new Error('Nom de l’organisation, responsable et téléphone sont obligatoires.');
       ok(await sb.from('demandes_abonnement').insert(d)); return true;
+    }
+  };
+
+  MV.public = {
+    don: async function (orgId, d) { var v = verifDon(d); ok(await sb.from('dons').insert(Object.assign({ org_id: orgId }, v))); return true; },
+    inscrire: async function (orgId, evtId, x) {
+      var v = verifPersonne(x, 'vous inscrire');
+      ok(await sb.from('inscriptions').insert(Object.assign({ org_id: orgId, evenement_id: evtId, nombre: Math.min(20, Math.max(1, parseInt(x.nombre, 10) || 1)) }, v))); return true;
+    },
+    adherer: async function (orgId, x) {
+      var v = verifPersonne(x, 'devenir membre');
+      ok(await sb.from('adhesions').insert(Object.assign({ org_id: orgId, email: String(x.email || '').trim().slice(0, 120), ville: String(x.ville || '').trim().slice(0, 80), message: String(x.message || '').trim().slice(0, 500) }, v))); return true;
+    },
+    compter: function (orgId, type, source) {
+      if (TYPES_STAT.indexOf(type) < 0) return Promise.resolve(false);
+      return sb.rpc('minva_compter', { p_org: orgId, p_type: type, p_source: String(source || 'direct').slice(0, 20) }).then(function () { return true; }, function () { return false; });
+    }
+  };
+
+  MV.dons = {
+    lister: async function () { return ok(await sb.from('dons').select('*').eq('org_id', await orgId()).order('created_at', { ascending: false }).limit(300)); },
+    statut: async function (id, statut) { ok(await sb.from('dons').update({ statut: statut }).eq('id', id)); return true; },
+    supprimer: async function (id) { ok(await sb.from('dons').delete().eq('id', id)); return true; }
+  };
+  MV.evts = {
+    lister: async function () {
+      var id = await orgId();
+      var r = await Promise.all([sb.from('evenements_publics').select('*').eq('org_id', id).order('debut', { ascending: false }).limit(200)]);
+      return ok(r[0]);
+    },
+    enregistrer: async function (e) {
+      var v = verifEvt(e);
+      if (e.id) ok(await sb.from('evenements').update(v).eq('id', e.id));
+      else ok(await sb.from('evenements').insert(Object.assign({ org_id: await orgId() }, v)));
+      return true;
+    },
+    supprimer: async function (id) { ok(await sb.from('evenements').delete().eq('id', id)); return true; },
+    inscrits: async function (evtId) { return ok(await sb.from('inscriptions').select('*').eq('evenement_id', evtId).order('created_at', { ascending: false })); },
+    retirerInscrit: async function (id) { ok(await sb.from('inscriptions').delete().eq('id', id)); return true; }
+  };
+  MV.adhesions = {
+    lister: async function () { return ok(await sb.from('adhesions').select('*').eq('org_id', await orgId()).order('created_at', { ascending: false }).limit(500)); },
+    statut: async function (id, statut) { ok(await sb.from('adhesions').update({ statut: statut }).eq('id', id)); return true; },
+    supprimer: async function (id) { ok(await sb.from('adhesions').delete().eq('id', id)); return true; }
+  };
+  MV.stats = {
+    lister: async function (jours) {
+      var min = new Date(Date.now() - (jours || 30) * 86400000).toISOString().slice(0, 10);
+      return ok(await sb.from('statistiques').select('jour, type, source, n').eq('org_id', await orgId()).gte('jour', min));
     }
   };
 

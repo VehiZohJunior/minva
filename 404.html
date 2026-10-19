@@ -10,7 +10,8 @@
     var morceaux = location.pathname.split('/').filter(Boolean);
     var slug = (morceaux.pop() || '').toLowerCase();
     var base = '/' + morceaux.join('/') + (morceaux.length ? '/' : '');
-    if (/^[a-z0-9]([a-z0-9-]{1,48}[a-z0-9])$/.test(slug)) location.replace(base + 'site.html?o=' + slug);
+    // Les paramètres (?s=qr, ?s=wa…) et l'ancre (#agenda, #don…) sont conservés
+    if (/^[a-z0-9]([a-z0-9-]{1,48}[a-z0-9])$/.test(slug)) location.replace(base + 'site.html?o=' + slug + (location.search ? '&' + location.search.slice(1) : '') + location.hash);
     else location.replace('https://minva-associations.higgsfield.app/');
   })();
 </script>

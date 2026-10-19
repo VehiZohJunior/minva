@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Affiche · MinVa</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="assets/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;600&display=swap">
+<link rel="stylesheet" href="css/base.css?v=202610200100">
+<link rel="stylesheet" href="css/affiche.css?v=202610200100">
+<style id="format-page">@page { size: A4 portrait; margin: 0; }</style>
+</head>
+<body>
+<div class="af-outils" id="outils">
+  <div class="af-outils-in">
+    <b>Votre affiche est prête</b>
+    <div class="seg" role="group" aria-label="Format">
+      <button type="button" data-format="A4" aria-pressed="true">A4</button><button type="button" data-format="A5" aria-pressed="false">A5</button>
+    </div>
+    <button type="button" class="btn btn-principal btn-sm" id="imprimer">Imprimer ou enregistrer en PDF</button>
+  </div>
+  <p class="af-aide">Sur téléphone : touchez le bouton, puis choisissez « Enregistrer au format PDF » pour l’envoyer à un imprimeur.</p>
+</div>
+<main id="affiche" class="af-page" aria-busy="true"><p class="af-charge">Préparation de l’affiche…</p></main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="js/config.js?v=202610200100"></script>
+<script src="js/outils.js?v=202610200100"></script>
+<script src="js/themes.js?v=202610200100"></script>
+<script src="js/demo-store.js?v=202610200100"></script>
+<script src="js/api.js?v=202610200100"></script>
+<script src="js/etoffe.js?v=202610200100"></script>
+<script src="js/affiche.js?v=202610200100"></script>
+</body>
+</html>

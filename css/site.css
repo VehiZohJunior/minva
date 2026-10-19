@@ -224,6 +224,72 @@ body { background:var(--t-fond, var(--ivoire)); }
 .s-introuvable h1 { font-family:var(--font-serif); font-size:32px; line-height:40px; margin:0 0 var(--space-3); }
 .apercu-bandeau { background:var(--noir-minva); color:var(--ivoire); font-size:12px; text-align:center; padding:4px; }
 
+/* ---------- Vague 1 : petits boutons d'action ---------- */
+.s-mini-btn { font:inherit; font-size:13px; font-weight:600; line-height:18px; display:inline-flex; align-items:center; gap:6px; min-height:34px; padding:0 12px; border-radius:999px; border:1px solid var(--t-filet); background:var(--t-surface); color:var(--t-encre); cursor:pointer; }
+.s-mini-btn:hover { border-color:var(--t-encre); }
+.s-mini-btn.actif { background:var(--t-encre); color:var(--t-fond); border-color:var(--t-encre); }
+.s-mini-btn:disabled { opacity:.6; cursor:progress; }
+.s-mini-btn .ico { width:16px; height:16px; }
+.s-entree-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+.s-apropos .s-mini-btn { margin-top:18px; }
+
+/* ---------- Agenda ---------- */
+.s-agenda { display:grid; gap:16px; max-width:880px; }
+.s-evt { display:grid; grid-template-columns:84px minmax(0, 1fr); gap:20px; background:var(--t-surface); border:1px solid var(--t-filet); border-radius:var(--t-rayon); padding:20px; }
+.s-evt-date { background:var(--t-primaire); color:var(--t-sur-primaire); border-radius:var(--t-rayon); text-align:center; padding:12px 6px; align-self:start; }
+.s-evt-date b { display:block; font-family:var(--t-police-titre); font-weight:var(--t-poids-titre); font-size:34px; line-height:1; font-variant-numeric:tabular-nums; }
+.s-evt-date span { display:block; font-size:12px; text-transform:uppercase; letter-spacing:.08em; margin-top:4px; }
+.s-evt-corps h3 { margin:0 0 6px; font-size:20px; line-height:1.3; }
+.s-evt-quand { display:flex; align-items:center; gap:8px; margin:4px 0 0; color:var(--t-encre2); font-size:15px; }
+.s-evt-quand .ico { flex:none; }
+.s-evt-desc { margin:10px 0 0; line-height:1.6; white-space:pre-line; }
+.s-evt-pied { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; margin-top:16px; padding-top:14px; border-top:1px solid var(--t-filet); font-size:14px; color:var(--t-encre2); }
+.s-evt-actions { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+.s-complet { font-weight:700; color:var(--t-encre); }
+.s-evt.passe { opacity:.75; padding:14px 18px; }
+.s-evt.passe .s-evt-date { background:var(--t-filet); color:var(--t-encre); padding:8px 4px; }
+.s-evt.passe .s-evt-date b { font-size:24px; }
+.s-passes { margin-top:24px; max-width:880px; }
+.s-passes summary { cursor:pointer; font-weight:600; color:var(--t-encre2); margin-bottom:14px; }
+
+/* ---------- Faire un don ---------- */
+.s-don { display:grid; grid-template-columns:minmax(0, 1.1fr) minmax(0, 1fr); gap:28px; align-items:start; }
+.s-don-etapes { background:var(--t-surface); border:1px solid var(--t-filet); border-radius:var(--t-rayon); padding:24px; display:flex; flex-direction:column; gap:16px; }
+.s-etapes-don { margin:0; padding-left:20px; line-height:1.6; }
+.s-etapes-don li + li { margin-top:6px; }
+.s-moyens { list-style:none; margin:0; padding:0; display:grid; gap:10px; }
+.s-moyens li { display:grid; grid-template-columns:14px minmax(0, 1fr) auto; gap:12px; align-items:center; padding:12px 14px; border:1px solid var(--t-filet); border-radius:var(--t-rayon); background:var(--t-fond); }
+.s-moyen-pastille { width:14px; height:14px; border-radius:50%; box-shadow:0 0 0 1px rgba(0,0,0,.12); }
+.s-moyens small { display:block; font-size:12px; color:var(--t-encre2); font-weight:600; text-transform:uppercase; letter-spacing:.05em; }
+.s-moyens b { font-size:19px; letter-spacing:.02em; }
+.s-don-etapes .s-btn { align-self:flex-start; }
+.s-mur h3 { margin:0 0 14px; font-size:19px; }
+.s-mur ul { list-style:none; margin:0; padding:0; display:grid; gap:4px; }
+.s-mur li { display:grid; grid-template-columns:40px minmax(0, 1fr); gap:12px; padding:12px 0; border-bottom:1px solid var(--t-filet); }
+.s-mur-mono { width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:var(--t-accent); color:var(--t-sur-accent); font-weight:700; font-size:14px; }
+.s-mur b { font-size:15px; }
+.s-mur .num { color:var(--t-encre2); font-weight:600; margin-left:4px; }
+.s-mur small { display:block; color:var(--t-encre2); font-size:13px; margin-top:2px; }
+.s-mur q { display:block; margin-top:6px; font-style:italic; color:var(--t-encre); }
+.s-mur-vide { color:var(--t-encre2); margin:0; }
+
+/* ---------- Rejoindre ---------- */
+.s-rejoindre-in { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:20px 32px; padding:32px; border:2px dashed var(--t-filet); border-radius:var(--t-rayon); }
+.s-rejoindre h2 { margin:0 0 6px; font-size:calc(var(--t-echelle) * clamp(26px, 3.4vw, 36px)); line-height:1.1; }
+.s-rejoindre p { margin:0; color:var(--t-encre2); max-width:52ch; }
+
+/* ---------- Formulaires des visiteurs ---------- */
+.s-puces { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+.s-puce { font:inherit; font-size:13px; font-weight:600; padding:6px 12px; border-radius:999px; border:1px solid var(--gris-filet); background:var(--blanc); cursor:pointer; font-variant-numeric:tabular-nums; }
+.s-puce:hover { border-color:var(--noir-minva); }
+.facultatif { font-weight:400; color:var(--gris-pierre); font-size:13px; }
+.s-merci { display:flex; flex-direction:column; align-items:center; text-align:center; gap:12px; padding:12px 0; }
+.s-merci .ico-lg { width:44px; height:44px; color:var(--emeraude); }
+.s-merci h3 { margin:0; font-size:22px; }
+.s-merci p { margin:0 0 6px; color:var(--gris-pierre); max-width:40ch; }
+.s-merci .btn { min-width:220px; }
+.s-pied-in #installer { margin:0 auto 0 16px; }
+
 /* ---------- Adaptations ---------- */
 @media (max-width:1080px) { .s-nav { display:none; } }
 @media (max-width:860px) {
@@ -247,6 +313,12 @@ body { background:var(--t-fond, var(--ivoire)); }
   .s-besoin-ico { width:48px; height:48px; }
   .s-besoin .s-btn { grid-column:2; justify-self:start; }
   .s-actions .s-btn { flex:1 1 auto; }
+  .s-don { grid-template-columns:1fr; }
+  .s-evt { grid-template-columns:62px minmax(0, 1fr); gap:14px; padding:16px; }
+  .s-evt-date b { font-size:26px; }
+  .s-rejoindre-in { padding:24px; }
+  .s-rejoindre-in .s-btn { width:100%; }
+  .s-pied-in #installer { margin:8px 0; }
   /* Barre d'action fixe : les visiteurs arrivent surtout depuis WhatsApp, sur téléphone */
   .s-barre-action { display:grid; grid-auto-flow:column; grid-auto-columns:1fr; gap:8px; position:fixed; left:0; right:0; bottom:0; z-index:40; padding:10px 12px calc(10px + env(safe-area-inset-bottom, 0px)); background:color-mix(in srgb, var(--t-fond) 94%, transparent); backdrop-filter:blur(10px); border-top:1px solid var(--t-filet); }
   .s-barre-action .s-btn { min-height:48px; padding:0 10px; font-size:14px; }

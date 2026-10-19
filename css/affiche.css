@@ -1,0 +1,44 @@
+/* MinVa — affiche imprimable (A4 ou A5) */
+body { margin: 0; background: #E9E5DD; font-family: "Work Sans", system-ui, sans-serif; color: #1C1814; }
+.af-outils { position: sticky; top: 0; z-index: 2; background: #14100D; color: #FBF7F0; padding: 12px 16px; }
+.af-outils-in { max-width: 820px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.af-outils-in b { margin-right: auto; }
+
+.af-aide { max-width: 820px; margin: 6px auto 0; font-size: 13px; opacity: .8; }
+.af-charge { padding: 40px; text-align: center; }
+
+.af-page { --l: 210mm; --h: 297mm; width: var(--l); min-height: var(--h); margin: 24px auto; background: var(--t-fond, #FAF8F3); box-shadow: 0 10px 40px rgba(20, 16, 13, .18);
+  position: relative; overflow: hidden; display: flex; flex-direction: column; color: var(--t-encre); }
+.af-page.a5 { --l: 148mm; --h: 210mm; font-size: 70.5%; }
+.af-etoffe { height: 22%; flex: none; }
+.af-etoffe svg, .af-bande svg { display: block; width: 100%; height: 100%; }
+.af-sceau { position: absolute; left: 9%; top: calc(22% - 3.4em); width: 7em; height: 7em; border-radius: 50%; overflow: hidden; background: var(--t-surface); box-shadow: 0 0 0 .35em var(--t-fond); font-size: 16px; }
+.af-page.a5 .af-sceau { font-size: 11.3px; }
+.af-sceau svg, .af-sceau img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.af-corps { flex: 1; padding: 4.6em 9% 2em; display: flex; flex-direction: column; gap: 1.1em; }
+.af-type { font-size: 1em; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--t-lien); margin: 0; }
+.af-nom { font-family: var(--t-police-titre); font-weight: var(--t-poids-titre); font-size: 2.3em; line-height: 1.1; margin: 0; }
+.af-titre { font-family: var(--t-police-titre); font-weight: var(--t-poids-titre); font-size: 3.6em; line-height: 1.04; margin: .2em 0 0; }
+.af-texte { font-size: 1.35em; line-height: 1.45; margin: 0; color: var(--t-encre2); max-width: 32em; }
+.af-quand { display: grid; gap: .3em; font-size: 1.45em; font-weight: 600; margin: .2em 0; }
+.af-quand span { display: flex; gap: .5em; align-items: center; }
+.af-bas { margin-top: auto; display: grid; grid-template-columns: auto 1fr; gap: 1.6em; align-items: center; padding-top: 1.2em; border-top: 2px solid var(--t-filet); }
+.af-qr { width: 11em; height: 11em; background: #fff; padding: .6em; border-radius: .6em; box-sizing: content-box; }
+.af-qr img, .af-qr canvas { width: 100% !important; height: 100% !important; display: block; }
+.af-scan b { display: block; font-size: 1.5em; line-height: 1.25; margin-bottom: .35em; }
+.af-scan p { margin: 0 0 .3em; font-size: 1.1em; color: var(--t-encre2); word-break: break-all; }
+.af-pied { flex: none; background: var(--t-primaire); color: var(--t-sur-primaire); padding: .9em 9%; display: flex; justify-content: space-between; align-items: center; font-size: 1em; gap: 1em; }
+.af-bande { height: 1.1em; flex: none; }
+
+@media screen and (max-width: 860px) {
+  .af-page { transform-origin: top left; margin-left: 16px; }
+}
+@media print {
+  body { background: none; }
+  .af-outils { display: none; }
+  .af-page { margin: 0; box-shadow: none; width: var(--l); height: var(--h); min-height: 0; transform: none !important; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+.seg { display:inline-flex; border:1px solid #FBF7F0; border-radius:999px; overflow:hidden; }
+.seg button { font:inherit; font-size:13px; font-weight:600; border:0; background:transparent; color:#FBF7F0; padding:6px 14px; cursor:pointer; min-height:32px; }
+.seg button[aria-pressed="true"] { background:#FBF7F0; color:#14100D; }

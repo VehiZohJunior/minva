@@ -69,7 +69,7 @@
     var l = orgs.filter(function (o) { return (!s || o.secteur === s) && (!q || O.norm([o.nom, o.ville, o.region, o.mission, o.slogan, O.typeDe(o)[1]].join(' ')).indexOf(q) >= 0); });
     $('v-annuaire').innerHTML = l.length ? l.map(function (o) {
       var sect = O.SECTEURS[o.secteur] || O.SECTEURS.education, j = actifDepuis(o);
-      return '<a class="v-org" href="' + esc(MV.lienSite(o.slug)) + '" style="--c:' + sect.c + '"><span class="mono">' + (o.logo_url ? '<img src="' + esc(o.logo_url) + '" alt="">' : esc(o.sigle || O.sigleDe(o.nom))) + '</span>' +
+      return '<a class="v-org" href="' + esc(MV.lienSite(o.slug) + '?s=annuaire') + '" style="--c:' + sect.c + '"><span class="mono">' + (o.logo_url ? '<img src="' + esc(o.logo_url) + '" alt="">' : esc(o.sigle || O.sigleDe(o.nom))) + '</span>' +
         '<div><b>' + esc(o.nom) + (o.statut_verification === 'verifie' ? ' <span class="sr">' + O.accord(o, 'vérifié', 'vérifiée') + '</span>' : '') + '</b><p>' + esc(o.mission || o.slogan || '') + '</p>' +
         '<small class="' + (j <= 7 ? 'frais' : '') + '">' + esc([O.typeDe(o)[1], o.ville, sect.nom].filter(Boolean).join(' · ')) + (o.derniere_actualite ? ' · actualité ' + O.quand(o.derniere_actualite) : '') + (o.statut_verification === 'verifie' ? ' · ' + O.accord(o, 'Vérifié', 'Vérifiée') : '') + '</small></div></a>';
     }).join('') : '<div class="v-vide">' + (orgs.length ? 'Aucune organisation ne correspond à votre recherche.' : 'Les premières organisations arrivent très bientôt. La vôtre peut être la première.') + '</div>';
@@ -81,7 +81,7 @@
     if (!ex.length) { $('exemples').hidden = true; return; }
     $('v-exemples').innerHTML = ex.map(function (o) {
       var t = window.minvaTheme(o.theme), sect = O.SECTEURS[o.secteur] || O.SECTEURS.education;
-      return '<a class="v-exemple" href="' + esc(MV.lienSite(o.slug)) + '"><div class="v-ex-haut" style="background:' + t.primaire + ';color:' + t.surPrimaire + '">' +
+      return '<a class="v-exemple" href="' + esc(MV.lienSite(o.slug) + '?s=annuaire') + '"><div class="v-ex-haut" style="background:' + t.primaire + ';color:' + t.surPrimaire + '">' +
         (o.couverture_url ? '<img src="' + esc(o.couverture_url) + '" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.45">' : '<div class="bogolan"></div>') +
         '<span class="mono" style="background:' + t.surPrimaire + ';color:' + t.primaire + '">' + (o.logo_url ? '<img src="' + esc(o.logo_url) + '" alt="">' : esc(o.sigle || O.sigleDe(o.nom))) + '</span><b>' + esc(o.nom) + '</b></div>' +
         '<div class="v-ex-bas"><span>' + esc(o.slogan || o.mission || '') + '</span><small>' + esc(O.typeDe(o)[1]) + ' · ' + esc(sect.nom) + ' · ' + esc(o.ville || '') + ' · thème ' + esc(t.nom) + '</small><span class="lien">Visiter le site' + ico('suite') + '</span></div></a>';

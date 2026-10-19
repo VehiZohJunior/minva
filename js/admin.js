@@ -4,16 +4,20 @@
 (function () {
   var O = window.MVO, MV = window.MV, esc = O.esc, ico = O.ico;
   var racine = document.getElementById('racine');
-  var S = { profil: null, org: null, brouillon: null, actus: [], projets: [], docs: [], admins: [], journal: [],
+  var S = { profil: null, org: null, brouillon: null, actus: [], projets: [], docs: [], admins: [], journal: [], dons: [], evts: [], adhesions: [], filtreDons: 'declare', filtreMembres: 'nouvelle', periode: 30,
     ongletSite: 'identite', appareil: 'tel', composer: { type: 'actu', fichiers: [], apercus: [] }, envoi: false };
 
   var PAGES = [
     ['accueil', 'Accueil', 'maison'],
     ['site', 'Mon site', 'pinceau'],
     ['actualites', 'Actualités', 'actu'],
+    ['agenda', 'Agenda', 'evenement'],
     ['projets', 'Projets', 'cible'],
+    ['dons', 'Dons', 'coeur'],
     ['besoins', 'Besoins & équipe', 'besoin'],
+    ['membres', 'Membres', 'plus'],
     ['documents', 'Documents', 'rapport'],
+    ['stats', 'Statistiques', 'graph'],
     null,
     ['admins', 'Administrateurs', 'equipe'],
     ['acces', 'Accès développeur', 'cle'],
@@ -33,6 +37,8 @@
   function sigle(o) { return o.sigle || O.sigleDe(o.nom); }
   function logoHtml(o) { return o.logo_url ? '<img src="' + esc(o.logo_url) + '" alt="">' : esc(sigle(o)); }
   function lien() { return MV.lienSite(S.org.slug); }
+  function lienAffiche(evtId) { return 'affiche.html?o=' + encodeURIComponent(S.org.slug) + (evtId ? '&e=' + encodeURIComponent(evtId) : '') + (MV.mode === 'demo' ? '&demo=1' : ''); }
+  function waLien(num, texte) { var n = String(num || '').replace(/[^0-9]/g, ''); if (n.length === 10) n = '225' + n; return n ? 'https://wa.me/' + n + '?text=' + encodeURIComponent(texte) : ''; }
   function acesOuvert(o) { return !!(o.acces_support_actif && o.acces_support_expire && new Date(o.acces_support_expire) > new Date()); }
 
   // ---------------- Fenêtre ----------------
@@ -80,14 +86,16 @@
   function demarrer() {
     return Promise.all([MV.auth.profil(), MV.org.mienne()]).then(function (r) {
       S.profil = r[0]; S.org = r[1]; S.brouillon = JSON.parse(JSON.stringify(r[1]));
-      return Promise.all([MV.actu.lister(), MV.projet.lister(), MV.doc.lister(), MV.admins.lister(), MV.support.journal()]);
+      // Agenda, dons et membres : s'ils ne répondent pas (base pas encore à jour), la console fonctionne quand même
+      var souple = function (pr) { return pr.catch(function () { return []; }); };
+      return Promise.all([MV.actu.lister(), MV.projet.lister(), MV.doc.lister(), MV.admins.lister(), MV.support.journal(), souple(MV.dons.lister()), souple(MV.evts.lister()), souple(MV.adhesions.lister())]);
     }).then(function (r) {
-      S.actus = r[0]; S.projets = r[1]; S.docs = r[2]; S.admins = r[3]; S.journal = r[4];
+      S.actus = r[0]; S.projets = r[1]; S.docs = r[2]; S.admins = r[3]; S.journal = r[4]; S.dons = r[5]; S.evts = r[6]; S.adhesions = r[7];
       coque(); afficher();
     });
   }
   function recharger(quoi) {
-    var t = { actus: MV.actu.lister, projets: MV.projet.lister, docs: MV.doc.lister, admins: MV.admins.lister, journal: MV.support.journal, org: MV.org.mienne };
+    var t = { actus: MV.actu.lister, projets: MV.projet.lister, docs: MV.doc.lister, admins: MV.admins.lister, journal: MV.support.journal, org: MV.org.mienne, dons: MV.dons.lister, evts: MV.evts.lister, adhesions: MV.adhesions.lister };
     return t[quoi]().then(function (v) { S[quoi] = v; if (quoi === 'org') S.brouillon = JSON.parse(JSON.stringify(v)); });
   }
 
@@ -122,6 +130,9 @@
       var pastille = '';
       if (x[0] === 'acces' && acesOuvert(o)) pastille = '<span class="pastille-nav">ouvert</span>';
       if (x[0] === 'documents' && docsAttente) pastille = '<span class="pastille-nav">' + docsAttente + '</span>';
+      var nbDons = S.dons.filter(function (d) { return d.statut === 'declare'; }).length, nbMembres = S.adhesions.filter(function (a) { return a.statut === 'nouvelle'; }).length;
+      if (x[0] === 'dons' && nbDons) pastille = '<span class="pastille-nav">' + nbDons + '</span>';
+      if (x[0] === 'membres' && nbMembres) pastille = '<span class="pastille-nav">' + nbMembres + '</span>';
       return '<a href="#' + x[0] + '"' + (x[0] === p ? ' aria-current="page"' : '') + '>' + ico(x[2]) + x[1] + pastille + '</a>';
     }).join('');
     document.getElementById('lat-logo').innerHTML = logoHtml(o);
@@ -136,7 +147,7 @@
     if (page() !== 'site' && modifie()) { S.brouillon = JSON.parse(JSON.stringify(S.org)); }
     majNav();
     var c = document.getElementById('contenu');
-    var rendus = { accueil: pAccueil, site: pSite, actualites: pActus, projets: pProjets, besoins: pBesoins, documents: pDocuments, admins: pAdmins, acces: pAcces, parametres: pParametres };
+    var rendus = { accueil: pAccueil, site: pSite, actualites: pActus, agenda: pAgenda, projets: pProjets, dons: pDons, besoins: pBesoins, membres: pMembres, documents: pDocuments, stats: pStats, admins: pAdmins, acces: pAcces, parametres: pParametres };
     rendus[page()](c);
     window.scrollTo(0, 0);
   }
@@ -181,14 +192,15 @@
     c.innerHTML = tete('Bonjour ' + esc(prenom), 'Voici où en est le site de ' + esc(o.nom) + '.') + abo +
       '<section class="bloc"><h2>Votre site est en ligne</h2><div class="lien-site"><code>' + esc(lien()) + '</code>' +
       '<button type="button" class="btn btn-principal btn-sm" id="a-copier">' + ico('copier') + 'Copier le lien</button>' +
-      '<a class="btn btn-secondaire btn-sm" href="https://wa.me/?text=' + encodeURIComponent(o.nom + ' : ' + lien()) + '" target="_blank" rel="noopener">' + ico('whatsapp') + 'Envoyer sur WhatsApp</a>' +
-      '<button type="button" class="btn btn-secondaire btn-sm" id="a-qr">' + ico('qr') + 'QR code</button></div>' +
+      '<a class="btn btn-secondaire btn-sm" href="https://wa.me/?text=' + encodeURIComponent(o.nom + ' : ' + lien() + '?s=wa') + '" target="_blank" rel="noopener">' + ico('whatsapp') + 'Envoyer sur WhatsApp</a>' +
+      '<button type="button" class="btn btn-secondaire btn-sm" id="a-qr">' + ico('qr') + 'QR code</button>' +
+      '<a class="btn btn-secondaire btn-sm" href="' + lienAffiche() + '" target="_blank" rel="noopener">' + ico('rapport') + 'Affiche à imprimer</a></div>' +
       '<p class="note" style="margin-top:12px">Imprimez le QR code sur vos affiches et vos cartes de visite : on le scanne avec l’appareil photo du téléphone pour ouvrir votre site.</p></section>' +
       '<div class="tuiles">' +
       '<a class="tuile" href="#actualites"><b>' + S.actus.length + '</b><span>actualités' + (derniere ? ' · dernière ' + O.quand(derniere.created_at) : '') + '</span></a>' +
       '<a class="tuile" href="#projets"><b>' + S.projets.length + '</b><span>projets présentés</span></a>' +
       '<a class="tuile" href="#documents"><b>' + docsVerif + '/6</b><span>documents vérifiés</span></a>' +
-      '<a class="tuile" href="#admins"><b>' + S.admins.length + '/3</b><span>administrateurs</span></a></div>' +
+      '<a class="tuile" href="#admins"><b>' + S.admins.length + '/3</b><span>administrateurs</span></a></div>' + nouveautes() +
       '<div class="grille-2"><section class="bloc"><h2>Complétez votre site</h2><div class="progres-tete"><b>' + pct + '%</b><div class="piste" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '" aria-label="Site complété"><i style="width:' + pct + '%"></i></div></div>' +
       '<ul class="etapes">' + et.map(function (e, i) {
         return '<li class="' + (e[0] ? 'fait' : '') + '"><a href="#' + e[2] + '" data-onglet="' + (e[3] || '') + '"><span class="rond">' + (e[0] ? ico('verifie') : '') + '</span><span>' + e[1] + '</span>' + ico('suite') + '</a></li>';
@@ -211,7 +223,7 @@
       '<div class="qr-zone"><div id="qr"></div><p class="note">' + esc(lien()) + '</p></div>',
       '<button type="button" class="btn btn-secondaire" id="qr-fermer">Fermer</button><button type="button" class="btn btn-principal" id="qr-dl">' + ico('telecharger') + 'Télécharger l’image</button>');
     var zone = document.getElementById('qr');
-    if (window.QRCode) new window.QRCode(zone, { text: lien(), width: 440, height: 440, colorDark: '#14100D', colorLight: '#FFFFFF', correctLevel: window.QRCode.CorrectLevel.M });
+    if (window.QRCode) new window.QRCode(zone, { text: lien() + '?s=qr', width: 440, height: 440, colorDark: '#14100D', colorLight: '#FFFFFF', correctLevel: window.QRCode.CorrectLevel.M });
     else zone.innerHTML = '<p class="note">Le générateur de QR code n’a pas pu se charger. Vérifiez votre connexion internet.</p>';
     document.getElementById('qr-fermer').onclick = function () { fen.close(); };
     document.getElementById('qr-dl').onclick = function () {
@@ -310,7 +322,8 @@
         }).join('') + '</div>';
     } else if (S.ongletSite === 'rubriques') {
       var R = [['apropos', 'À propos', 'Votre mission et votre histoire'], ['actualites', 'Actualités', 'Vos publications, avec photos'], ['projets', 'Projets', 'Vos projets et leur collecte'], ['besoins', 'Nous aider', 'Ce dont vous avez besoin'],
-        ['galerie', 'Photos', 'Toutes les photos de vos actualités (à partir de 3)'], ['documents', 'Transparence', 'Vos documents officiels vérifiés'], ['equipe', 'Équipe', 'Les membres de votre bureau'], ['contact', 'Contact', 'WhatsApp, téléphone, email, adresse']];
+        ['galerie', 'Photos', 'Toutes les photos de vos actualités (à partir de 3)'], ['documents', 'Transparence', 'Vos documents officiels vérifiés'], ['equipe', 'Équipe', 'Les membres de votre bureau'], ['contact', 'Contact', 'WhatsApp, téléphone, email, adresse'],
+        ['agenda', 'Agenda', 'Vos événements, avec inscription en ligne'], ['dons', 'Faire un don', 'Vos numéros Mobile Money et le mur des donateurs'], ['rejoindre', 'Devenir membre', 'Un bouton pour demander à vous rejoindre']];
       var rb = b.rubriques || {};
       h = '<p class="note" style="margin-bottom:8px">Masquez les rubriques dont vous ne voulez pas. Une rubrique vide ne s’affiche jamais, même activée.</p><ul class="rubriques">' +
         R.map(function (r) { return '<li><div><b>' + r[1] + '</b><span>' + r[2] + '</span></div><label class="inter"><input type="checkbox" data-rub="' + r[0] + '"' + (rb[r[0]] !== false ? ' checked' : '') + '><span class="piste-inter"></span><span class="sr">Afficher ' + r[1] + '</span></label></li>'; }).join('') + '</ul>';
@@ -326,7 +339,11 @@
         champ('c-tel', 'Téléphone affiché', ct.telephone, { type: 'tel', cle: 'contact.telephone', placeholder: '+225 07 00 00 00 00' }) +
         champ('c-email', 'Email', ct.email, { type: 'email', cle: 'contact.email' }) +
         champ('c-fb', 'Page Facebook', ct.facebook, { cle: 'contact.facebook', placeholder: 'https://facebook.com/votrepage' }) +
-        champ('c-adr', 'Adresse ou repère', ct.adresse, { cle: 'contact.adresse', max: 160, placeholder: 'Quartier, rue, à côté de…' }) + '</div>';
+        champ('c-adr', 'Adresse ou repère', ct.adresse, { cle: 'contact.adresse', max: 160, placeholder: 'Quartier, rue, à côté de…' }) +
+        '<div class="encart-mm"><b>Recevoir des dons par Mobile Money</b><p class="note">Vos visiteurs envoient leur don directement sur ces numéros : MinVa ne touche jamais l’argent et ne prend aucune commission. Laissez vide ce que vous n’utilisez pas.</p>' +
+        '<div class="grille-champs">' + champ('c-orange', 'Orange Money', ct.orange, { type: 'tel', cle: 'contact.orange', max: 20, placeholder: '07 00 00 00 00' }) + champ('c-mtn', 'MTN MoMo', ct.mtn, { type: 'tel', cle: 'contact.mtn', max: 20, placeholder: '05 00 00 00 00' }) + '</div>' +
+        '<div class="grille-champs">' + champ('c-moov', 'Moov Money', ct.moov, { type: 'tel', cle: 'contact.moov', max: 20, placeholder: '01 00 00 00 00' }) + champ('c-wave', 'Wave', ct.wave, { type: 'tel', cle: 'contact.wave', max: 20, placeholder: '07 00 00 00 00' }) + '</div>' +
+        champ('c-lwave', 'Lien de paiement Wave (facultatif)', ct.lien_wave, { cle: 'contact.lien_wave', max: 200, placeholder: 'https://pay.wave.com/m/…', aide: 'Dans l’application Wave Business : « Recevoir un paiement » → copier le lien.' }) + '</div></div>';
     }
     z.innerHTML = h;
 
@@ -404,14 +421,19 @@
         .then(function () { S.envoi = false; O.toast('Publié sur votre site.'); pActus(c); })
         .catch(function (e) { S.envoi = false; occupe(pub, false); maj(); erreur(e); });
     };
-    document.getElementById('a-liste').onclick = supprimerAvecConfirmation(function (id) { return MV.actu.supprimer(id).then(function () { return recharger('actus'); }).then(function () { pActus(c); O.toast('Publication supprimée.'); }); });
+    var supprActu = supprimerAvecConfirmation(function (id) { return MV.actu.supprimer(id).then(function () { return recharger('actus'); }).then(function () { pActus(c); O.toast('Publication supprimée.'); }); });
+    document.getElementById('a-liste').onclick = function (e) {
+      var b = e.target.closest('[data-image-actu]');
+      if (b) { var a = S.actus.find(function (x) { return x.id === b.dataset.imageActu; }), dt = new Date(a.created_at); imagePartage(b, { surtitre: (O.TYPES_ACTU[a.type] || 'Actualité') + ' · ' + O.dateLongue(dt), texte: a.texte || '', photo: (a.photos || [])[0] }, 'actualite'); return; }
+      supprActu(e);
+    };
     maj();
   }
   function listeActus() {
     if (!S.actus.length) return '<div class="vide"><h3>Aucune publication pour l’instant</h3><p>Votre première actualité fera vivre votre site. Quelques lignes et une photo suffisent.</p></div>';
     return S.actus.map(function (a) {
       return '<article class="post"><div class="post-tete"><span class="badge b-neutre">' + ico(a.type) + (O.TYPES_ACTU[a.type] || '') + '</span><time datetime="' + a.created_at + '">' + O.quand(a.created_at) + '</time>' +
-        '<span class="actions"><button type="button" class="btn btn-lien" data-suppr="' + a.id + '">Supprimer</button></span></div>' +
+        '<span class="actions"><button type="button" class="btn btn-secondaire btn-sm" data-image-actu="' + a.id + '">' + ico('photo') + 'Image à partager</button><button type="button" class="btn btn-lien" data-suppr="' + a.id + '">Supprimer</button></span></div>' +
         ((a.photos || []).length ? '<div class="post-photos">' + a.photos.map(function (p) { return '<img src="' + esc(p) + '" alt="">'; }).join('') + '</div>' : '') +
         (a.texte ? '<p>' + esc(a.texte) + '</p>' : '') + '</article>';
     }).join('');
@@ -662,6 +684,245 @@
       if (a !== b) { O.toast('Les deux mots de passe ne sont pas identiques.', 'erreur'); return; }
       MV.auth.changerMotDePasse(a).then(function () { e.target.reset(); O.toast('Mot de passe changé.'); }).catch(erreur);
     };
+  }
+
+  // =================================================================
+  // OUTILS COMMUNS DE LA VAGUE 1
+  // =================================================================
+  function nouveautes() {
+    var d = S.dons.filter(function (x) { return x.statut === 'declare'; }).length;
+    var m = S.adhesions.filter(function (x) { return x.statut === 'nouvelle'; }).length;
+    var prochain = S.evts.filter(function (e) { return new Date(e.fin || e.debut) >= new Date(); }).sort(function (a, b) { return new Date(a.debut) - new Date(b.debut); })[0];
+    if (!d && !m && !prochain) return '';
+    return '<section class="bloc"><h2>À traiter</h2><ul class="a-traiter">' +
+      (d ? '<li><a href="#dons">' + ico('coeur') + '<span><b>' + d + ' don' + (d > 1 ? 's' : '') + '</b> à confirmer</span>' + ico('suite') + '</a></li>' : '') +
+      (m ? '<li><a href="#membres">' + ico('plus') + '<span><b>' + m + ' demande' + (m > 1 ? 's' : '') + '</b> pour devenir membre</span>' + ico('suite') + '</a></li>' : '') +
+      (prochain ? '<li><a href="#agenda">' + ico('evenement') + '<span>Prochain événement : <b>' + esc(prochain.titre) + '</b>, ' + esc(O.dateLongue(prochain.debut)) + ' · ' + prochain.inscrits + ' inscrit' + (prochain.inscrits > 1 ? 's' : '') + '</span>' + ico('suite') + '</a></li>' : '') +
+      '</ul></section>';
+  }
+  function imagePartage(btn, c, nomFichier) {
+    if (!window.MinVaImage) { O.toast('Le générateur d’images n’a pas pu se charger.', 'erreur'); return; }
+    occupe(btn, true, 'Création…');
+    window.MinVaImage.carte(Object.assign({ org: S.org, lien: lien() + '?s=wa' }, c))
+      .then(function (blob) { return window.MinVaImage.partager(blob, S.org.slug + '-' + nomFichier + '.png', S.org.nom + ' : ' + lien() + '?s=wa'); })
+      .then(function (r) { if (r === 'telechargement') O.toast('Image enregistrée dans vos téléchargements : publiez-la dans votre statut WhatsApp.'); })
+      .catch(function () { O.toast('L’image n’a pas pu être créée sur cet appareil.', 'erreur'); })
+      .then(function () { occupe(btn, false); });
+  }
+  function telechargerCsv(nom, lignes) {
+    var csv = '﻿' + lignes.map(function (l) { return l.map(function (v) { return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; }).join(';'); }).join('\r\n');
+    var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' })); a.download = nom;
+    document.body.appendChild(a); a.click(); a.remove();
+  }
+  function filtres(id, actuel, options) {
+    return '<div class="seg" role="group" id="' + id + '">' + options.map(function (o) { return '<button type="button" data-filtre="' + o[0] + '" aria-pressed="' + (actuel === o[0]) + '">' + o[1] + '</button>'; }).join('') + '</div>';
+  }
+  var NOMS_MOYENS = { orange: 'Orange Money', mtn: 'MTN MoMo', moov: 'Moov Money', wave: 'Wave', autre: 'Autre' };
+
+  // =================================================================
+  // DONS
+  // =================================================================
+  function pDons(c) {
+    var o = S.org, ct = o.contact || {};
+    var configure = ['orange', 'mtn', 'moov', 'wave', 'lien_wave'].some(function (k) { return String(ct[k] || '').trim(); });
+    var confirmes = S.dons.filter(function (d) { return d.statut === 'confirme'; });
+    var mois = confirmes.filter(function (d) { return O.joursDepuis(d.created_at) <= 30; });
+    var total = function (l) { return l.reduce(function (t, d) { return t + d.montant; }, 0); };
+    var liste = S.dons.filter(function (d) { return S.filtreDons === 'tous' || d.statut === S.filtreDons; });
+    c.innerHTML = tete('Dons', 'Vos visiteurs envoient leur don par Mobile Money, puis le déclarent sur votre site. Vérifiez la réception dans votre téléphone, puis confirmez : le don apparaît sur le mur des donateurs et la barre du projet avance toute seule.') +
+      (configure ? '' : '<div class="alerte-abo">' + ico('alerte', 'ico-lg') + '<div><b>Ajoutez vos numéros Mobile Money</b> pour afficher le bloc « Faire un don » sur votre site. <a href="#site" id="vers-contact">Mon site → Contact</a></div></div>') +
+      '<div class="tuiles"><div class="tuile"><b>' + S.dons.filter(function (d) { return d.statut === 'declare'; }).length + '</b><span>à confirmer</span></div>' +
+      '<div class="tuile"><b>' + O.nb(total(mois)) + '</b><span>FCFA confirmés sur 30 jours</span></div>' +
+      '<div class="tuile"><b>' + O.nb(total(confirmes)) + '</b><span>FCFA confirmés au total</span></div>' +
+      '<div class="tuile"><b>' + confirmes.length + '</b><span>dons confirmés</span></div></div>' +
+      '<section class="bloc"><div class="bloc-tete"><h2>Dons déclarés</h2>' + filtres('f-dons', S.filtreDons, [['declare', 'À confirmer'], ['confirme', 'Confirmés'], ['refuse', 'Refusés'], ['tous', 'Tous']]) + '</div>' +
+      (liste.length ? '<div class="lignes" id="l-dons">' + liste.map(function (d) {
+        var p = d.projet_id && S.projets.find(function (x) { return x.id === d.projet_id; });
+        var merci = d.telephone ? waLien(d.telephone, 'Bonjour ' + (d.nom || '') + ', ' + o.nom + ' a bien reçu votre don de ' + O.fcfa(d.montant) + '. Un immense merci pour votre soutien !') : '';
+        return '<article class="ligne-don ' + d.statut + '"><div class="ligne-don-montant"><b>' + O.nb(d.montant) + '</b><small>FCFA · ' + esc(NOMS_MOYENS[d.moyen] || d.moyen) + '</small></div>' +
+          '<div class="ligne-don-qui"><b>' + esc(d.nom || 'Sans nom') + (d.anonyme ? ' <span class="badge b-neutre">anonyme sur le site</span>' : '') + '</b>' +
+          '<small>' + O.quand(d.created_at) + (p ? ' · ' + esc(p.titre) : '') + (d.telephone ? ' · ' + esc(d.telephone) : '') + '</small>' + (d.message ? '<q>' + esc(d.message) + '</q>' : '') + '</div>' +
+          '<div class="actions">' + (d.statut !== 'confirme' ? '<button type="button" class="btn btn-principal btn-sm" data-statut="confirme" data-id="' + d.id + '">' + ico('verifie') + 'Confirmer</button>' : '<span class="badge b-verifie">' + ico('verifie') + 'Confirmé</span>') +
+          (d.statut === 'declare' ? '<button type="button" class="btn btn-secondaire btn-sm" data-statut="refuse" data-id="' + d.id + '">Pas reçu</button>' : '') +
+          (d.statut === 'confirme' ? '<button type="button" class="btn btn-lien" data-statut="declare" data-id="' + d.id + '">Annuler la confirmation</button>' : '') +
+          (merci ? '<a class="btn btn-secondaire btn-sm" href="' + merci + '" target="_blank" rel="noopener">' + ico('whatsapp') + 'Remercier</a>' : '') +
+          '<button type="button" class="btn btn-lien" data-suppr="' + d.id + '">Supprimer</button></div></article>';
+      }).join('') + '</div>' : '<div class="vide"><h3>' + (S.filtreDons === 'declare' ? 'Aucun don à confirmer' : 'Aucun don ici') + '</h3><p>Partagez le lien de votre page de dons : <code>' + esc(lien()) + '#don</code></p></div>') +
+      '</section>' + (S.dons.length ? '<p><button type="button" class="btn btn-secondaire btn-sm" id="dons-csv">' + ico('telecharger') + 'Télécharger la liste (tableur)</button></p>' : '');
+    var vc = document.getElementById('vers-contact'); if (vc) vc.onclick = function () { S.ongletSite = 'contact'; };
+    document.getElementById('f-dons').onclick = function (e) { var b = e.target.closest('[data-filtre]'); if (b) { S.filtreDons = b.dataset.filtre; pDons(c); } };
+    var csv = document.getElementById('dons-csv');
+    if (csv) csv.onclick = function () {
+      telechargerCsv('dons-' + o.slug + '.csv', [['Date', 'Nom', 'Montant (FCFA)', 'Moyen', 'Projet', 'Téléphone', 'Message', 'Statut']].concat(S.dons.map(function (d) {
+        var p = d.projet_id && S.projets.find(function (x) { return x.id === d.projet_id; });
+        return [new Date(d.created_at).toLocaleString('fr-FR'), d.nom, d.montant, NOMS_MOYENS[d.moyen] || d.moyen, p ? p.titre : '', d.telephone, d.message, { declare: 'À confirmer', confirme: 'Confirmé', refuse: 'Refusé' }[d.statut]];
+      })));
+    };
+    var l = document.getElementById('l-dons');
+    if (l) {
+      var suppr = supprimerAvecConfirmation(function (id) { return MV.dons.supprimer(id).then(function () { return Promise.all([recharger('dons'), recharger('projets')]); }).then(function () { majNav(); pDons(c); O.toast('Don supprimé.'); }); });
+      l.onclick = function (e) {
+        var b = e.target.closest('[data-statut]');
+        if (b) {
+          occupe(b, true);
+          MV.dons.statut(b.dataset.id, b.dataset.statut).then(function () { return Promise.all([recharger('dons'), recharger('projets')]); })
+            .then(function () { majNav(); pDons(c); O.toast(b.dataset.statut === 'confirme' ? 'Don confirmé : il apparaît sur votre site.' : b.dataset.statut === 'refuse' ? 'Don marqué comme non reçu.' : 'Confirmation annulée.'); })
+            .catch(function (er) { occupe(b, false); erreur(er); });
+          return;
+        }
+        suppr(e);
+      };
+    }
+  }
+
+  // =================================================================
+  // AGENDA
+  // =================================================================
+  function pAgenda(c) {
+    var maintenant = new Date();
+    var avenir = S.evts.filter(function (e) { return new Date(e.fin || e.debut) >= maintenant; }).sort(function (a, b) { return new Date(a.debut) - new Date(b.debut); });
+    var passes = S.evts.filter(function (e) { return new Date(e.fin || e.debut) < maintenant; });
+    function carte(e, passe) {
+      var dt = new Date(e.debut);
+      return '<div class="evt-ligne' + (passe ? ' passe' : '') + '"><div class="evt-date"><b>' + dt.getDate() + '</b><span>' + dt.toLocaleDateString('fr-FR', { month: 'short' }) + '</span></div>' +
+        '<div><h3>' + esc(e.titre) + (e.inscriptions ? '' : ' <span class="badge b-neutre">sans inscription</span>') + '</h3><p class="meta">' + esc(O.heureLongue(e.debut)) + (e.lieu ? ' · ' + esc(e.lieu) : '') + '</p>' +
+        '<p class="meta"><b>' + e.inscrits + '</b> inscrit' + (e.inscrits > 1 ? 's' : '') + (e.places ? ' sur ' + e.places + ' places' : '') + '</p></div>' +
+        '<div class="actions"><button type="button" class="btn btn-secondaire btn-sm" data-inscrits="' + e.id + '">' + ico('equipe') + 'Inscrits</button>' +
+        (passe ? '' : '<button type="button" class="btn btn-secondaire btn-sm" data-modif="' + e.id + '">' + ico('crayon') + 'Modifier</button>' +
+          '<a class="btn btn-secondaire btn-sm" href="' + lienAffiche(e.id) + '" target="_blank" rel="noopener">' + ico('rapport') + 'Affiche</a>' +
+          '<button type="button" class="btn btn-secondaire btn-sm" data-image-evt="' + e.id + '">' + ico('photo') + 'Image</button>') +
+        '<button type="button" class="btn btn-lien" data-suppr="' + e.id + '">Supprimer</button></div></div>';
+    }
+    c.innerHTML = tete('Agenda', 'Annoncez vos réunions, formations, fêtes et assemblées. Vos visiteurs s’inscrivent en ligne et ajoutent l’événement à leur calendrier.',
+      '<button type="button" class="btn btn-principal" id="ev-nouveau">' + ico('plus') + 'Nouvel événement</button>') +
+      '<section class="bloc"><h2>À venir <small>· ' + avenir.length + '</small></h2><div id="ev-liste">' + (avenir.length ? avenir.map(function (e) { return carte(e, false); }).join('')
+        : '<div class="vide"><h3>Aucun événement à venir</h3><p>Une assemblée générale, une formation, une journée portes ouvertes ? Annoncez-la : vos membres pourront s’inscrire.</p></div>') + '</div></section>' +
+      (passes.length ? '<section class="bloc"><h2>Passés <small>· ' + passes.length + '</small></h2><div id="ev-passes">' + passes.map(function (e) { return carte(e, true); }).join('') + '</div></section>' : '');
+    document.getElementById('ev-nouveau').onclick = function () { formEvt(null, c); };
+    var suppr = supprimerAvecConfirmation(function (id) { return MV.evts.supprimer(id).then(function () { return recharger('evts'); }).then(function () { pAgenda(c); O.toast('Événement supprimé.'); }); });
+    c.onclick = function (e) {
+      var b;
+      if ((b = e.target.closest('[data-modif]'))) { formEvt(S.evts.find(function (x) { return x.id === b.dataset.modif; }), c); return; }
+      if ((b = e.target.closest('[data-inscrits]'))) { fenetreInscrits(S.evts.find(function (x) { return x.id === b.dataset.inscrits; })); return; }
+      if ((b = e.target.closest('[data-image-evt]'))) {
+        var ev = S.evts.find(function (x) { return x.id === b.dataset.imageEvt; });
+        imagePartage(b, { surtitre: 'Événement · ' + O.heureLongue(ev.debut), titre: ev.titre, texte: (ev.lieu ? '📍 ' + ev.lieu + '. ' : '') + (ev.description || '') + (ev.inscriptions ? ' Inscription sur notre site.' : '') }, 'evenement');
+        return;
+      }
+      if (e.target.closest('[data-suppr]')) suppr(e);
+    };
+  }
+  function versLocal(iso) { if (!iso) return ['', '']; var d = new Date(iso), p = function (n) { return String(n).padStart(2, '0'); }; return [d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()), p(d.getHours()) + ':' + p(d.getMinutes())]; }
+  function formEvt(ev, c) {
+    ev = ev || { titre: '', description: '', debut: null, fin: null, lieu: '', places: null, inscriptions: true };
+    var deb = versLocal(ev.debut), fin = versLocal(ev.fin);
+    ouvrirFenetre(ev.id ? 'Modifier l’événement' : 'Nouvel événement',
+      '<div class="champ"><label for="ev-titre">Titre</label><input id="ev-titre" type="text" maxlength="120" value="' + esc(ev.titre) + '" placeholder="Assemblée générale annuelle"></div>' +
+      '<div class="grille-champs"><div class="champ"><label for="ev-date">Date</label><input id="ev-date" type="date" value="' + deb[0] + '"></div>' +
+      '<div class="champ"><label for="ev-h1">Heure de début</label><input id="ev-h1" type="time" value="' + (deb[1] || '09:00') + '"></div>' +
+      '<div class="champ"><label for="ev-h2">Heure de fin <span class="facultatif">(facultatif)</span></label><input id="ev-h2" type="time" value="' + fin[1] + '"></div></div>' +
+      '<div class="champ"><label for="ev-lieu">Lieu</label><input id="ev-lieu" type="text" maxlength="160" value="' + esc(ev.lieu) + '" placeholder="Foyer des jeunes, quartier…"></div>' +
+      '<div class="champ"><label for="ev-desc">Description</label><textarea id="ev-desc" maxlength="1500">' + esc(ev.description) + '</textarea><span class="aide">Programme, ce qu’il faut apporter, pour qui…</span></div>' +
+      '<div class="grille-champs"><div class="champ"><label for="ev-places">Nombre de places <span class="facultatif">(facultatif)</span></label><input id="ev-places" type="number" min="1" inputmode="numeric" value="' + (ev.places || '') + '"><span class="aide">Laissez vide s’il n’y a pas de limite.</span></div></div>' +
+      '<label class="case"><input type="checkbox" id="ev-insc"' + (ev.inscriptions !== false ? ' checked' : '') + '> Permettre l’inscription en ligne</label>',
+      '<button type="button" class="btn btn-secondaire" id="ev-annuler">Annuler</button><button type="button" class="btn btn-principal" id="ev-ok">Enregistrer</button>');
+    document.getElementById('ev-annuler').onclick = function () { fen.close(); };
+    document.getElementById('ev-ok').onclick = function () {
+      var btn = this, date = document.getElementById('ev-date').value, h1 = document.getElementById('ev-h1').value || '09:00', h2 = document.getElementById('ev-h2').value;
+      occupe(btn, true);
+      MV.evts.enregistrer({ id: ev.id, titre: document.getElementById('ev-titre').value, description: document.getElementById('ev-desc').value, lieu: document.getElementById('ev-lieu').value,
+        debut: date ? new Date(date + 'T' + h1) : null, fin: date && h2 ? new Date(date + 'T' + h2) : null, places: document.getElementById('ev-places').value, inscriptions: document.getElementById('ev-insc').checked })
+        .then(function () { return recharger('evts'); }).then(function () { fen.close(); pAgenda(c); O.toast('Événement enregistré : il apparaît dans l’agenda de votre site.'); })
+        .catch(function (e) { occupe(btn, false); erreur(e); });
+    };
+  }
+  function fenetreInscrits(ev) {
+    ouvrirFenetre('Inscrits · ' + ev.titre, '<p class="note">Chargement…</p>');
+    MV.evts.inscrits(ev.id).then(function (l) {
+      var total = l.reduce(function (t, i) { return t + i.nombre; }, 0);
+      document.getElementById('fen-corps').innerHTML = l.length
+        ? '<p><b>' + total + ' personne' + (total > 1 ? 's' : '') + '</b> pour ' + l.length + ' inscription' + (l.length > 1 ? 's' : '') + (ev.places ? ' · ' + ev.places + ' places' : '') + '</p><div class="lignes" id="l-insc">' +
+          l.map(function (i) {
+            var w = waLien(i.telephone, 'Bonjour ' + i.nom + ', petit rappel : « ' + ev.titre + ' » le ' + O.heureLongue(ev.debut) + (ev.lieu ? ' à ' + ev.lieu : '') + '. À bientôt ! ' + S.org.nom);
+            return '<div class="admin-ligne"><span class="mono">' + i.nombre + '</span><div><b>' + esc(i.nom) + '</b><span>' + esc(i.telephone) + ' · ' + O.quand(i.created_at) + '</span></div>' +
+              (w ? '<a class="btn btn-secondaire btn-sm" href="' + w + '" target="_blank" rel="noopener">' + ico('whatsapp') + 'Rappel</a>' : '') + '<button type="button" class="btn btn-lien" data-suppr="' + i.id + '">Retirer</button></div>';
+          }).join('') + '</div>'
+        : '<div class="vide"><h3>Personne pour l’instant</h3><p>Partagez l’événement depuis votre site (bouton « Inviter ») ou imprimez son affiche.</p></div>';
+      document.getElementById('fen-pied').innerHTML = (l.length ? '<button type="button" class="btn btn-secondaire" id="insc-csv">' + ico('telecharger') + 'Télécharger la liste</button>' : '') + '<button type="button" class="btn btn-principal" id="insc-fermer">Fermer</button>';
+      document.getElementById('fen-pied').hidden = false;
+      document.getElementById('insc-fermer').onclick = function () { fen.close(); };
+      var csv = document.getElementById('insc-csv');
+      if (csv) csv.onclick = function () { telechargerCsv('inscrits-' + O.slugifier(ev.titre).slice(0, 30) + '.csv', [['Nom', 'Téléphone', 'Personnes', 'Inscrit le']].concat(l.map(function (i) { return [i.nom, i.telephone, i.nombre, new Date(i.created_at).toLocaleString('fr-FR')]; }))); };
+      var li = document.getElementById('l-insc');
+      if (li) li.onclick = supprimerAvecConfirmation(function (id) { return MV.evts.retirerInscrit(id).then(function () { return recharger('evts'); }).then(function () { fenetreInscrits(S.evts.find(function (x) { return x.id === ev.id; }) || ev); if (page() === 'agenda') pAgenda(document.getElementById('contenu')); }); });
+    }).catch(erreur);
+  }
+
+  // =================================================================
+  // MEMBRES (demandes d'adhésion)
+  // =================================================================
+  function pMembres(c) {
+    var liste = S.adhesions.filter(function (a) { return S.filtreMembres === 'tous' || a.statut === S.filtreMembres; });
+    var acceptes = S.adhesions.filter(function (a) { return a.statut === 'acceptee'; }).length;
+    c.innerHTML = tete('Membres', 'Les personnes qui ont cliqué sur « Devenir membre » sur votre site. Recontactez-les, puis acceptez ou refusez leur demande.') +
+      '<div class="tuiles"><div class="tuile"><b>' + S.adhesions.filter(function (a) { return a.statut === 'nouvelle'; }).length + '</b><span>nouvelles demandes</span></div>' +
+      '<div class="tuile"><b>' + acceptes + '</b><span>membres acceptés en ligne</span></div></div>' +
+      '<section class="bloc"><div class="bloc-tete"><h2>Demandes</h2>' + filtres('f-membres', S.filtreMembres, [['nouvelle', 'Nouvelles'], ['acceptee', 'Acceptées'], ['refusee', 'Refusées'], ['tous', 'Toutes']]) + '</div>' +
+      (liste.length ? '<div class="lignes" id="l-membres">' + liste.map(function (a) {
+        var w = waLien(a.telephone, 'Bonjour ' + a.nom + ', merci pour votre demande pour rejoindre ' + S.org.nom + ' !');
+        return '<article class="ligne-membre"><span class="mono">' + esc(O.sigleDe(a.nom).slice(0, 2)) + '</span><div><b>' + esc(a.nom) + '</b>' +
+          '<small>' + esc([a.telephone, a.email, a.ville].filter(Boolean).join(' · ')) + ' · ' + O.quand(a.created_at) + '</small>' + (a.message ? '<q>' + esc(a.message) + '</q>' : '') + '</div>' +
+          '<div class="actions">' + (w ? '<a class="btn btn-secondaire btn-sm" href="' + w + '" target="_blank" rel="noopener">' + ico('whatsapp') + 'Répondre</a>' : '') +
+          (a.statut !== 'acceptee' ? '<button type="button" class="btn btn-principal btn-sm" data-statut="acceptee" data-id="' + a.id + '">Accepter</button>' : '<span class="badge b-verifie">' + ico('verifie') + 'Acceptée</span>') +
+          (a.statut === 'nouvelle' ? '<button type="button" class="btn btn-secondaire btn-sm" data-statut="refusee" data-id="' + a.id + '">Refuser</button>' : '') +
+          '<button type="button" class="btn btn-lien" data-suppr="' + a.id + '">Supprimer</button></div></article>';
+      }).join('') + '</div>' : '<div class="vide"><h3>Aucune demande ici</h3><p>Le bouton « Devenir membre » est affiché sur votre site (rubrique activable dans Mon site → Rubriques).</p></div>') + '</section>' +
+      (S.adhesions.length ? '<p><button type="button" class="btn btn-secondaire btn-sm" id="membres-csv">' + ico('telecharger') + 'Télécharger la liste (tableur)</button></p>' : '');
+    document.getElementById('f-membres').onclick = function (e) { var b = e.target.closest('[data-filtre]'); if (b) { S.filtreMembres = b.dataset.filtre; pMembres(c); } };
+    var csv = document.getElementById('membres-csv');
+    if (csv) csv.onclick = function () { telechargerCsv('membres-' + S.org.slug + '.csv', [['Nom', 'Téléphone', 'Email', 'Ville', 'Message', 'Statut', 'Demande le']].concat(S.adhesions.map(function (a) { return [a.nom, a.telephone, a.email, a.ville, a.message, { nouvelle: 'Nouvelle', acceptee: 'Acceptée', refusee: 'Refusée' }[a.statut], new Date(a.created_at).toLocaleString('fr-FR')]; }))); };
+    var l = document.getElementById('l-membres');
+    if (l) {
+      var suppr = supprimerAvecConfirmation(function (id) { return MV.adhesions.supprimer(id).then(function () { return recharger('adhesions'); }).then(function () { majNav(); pMembres(c); O.toast('Demande supprimée.'); }); });
+      l.onclick = function (e) {
+        var b = e.target.closest('[data-statut]');
+        if (b) { occupe(b, true); MV.adhesions.statut(b.dataset.id, b.dataset.statut).then(function () { return recharger('adhesions'); }).then(function () { majNav(); pMembres(c); O.toast(b.dataset.statut === 'acceptee' ? 'Demande acceptée. Pensez à accueillir ce nouveau membre !' : 'Demande refusée.'); }).catch(function (er) { occupe(b, false); erreur(er); }); return; }
+        suppr(e);
+      };
+    }
+  }
+
+  // =================================================================
+  // STATISTIQUES
+  // =================================================================
+  var NOMS_SOURCES = { whatsapp: 'WhatsApp', wa: 'WhatsApp', facebook: 'Facebook', qr: 'QR code / affiche', annuaire: 'Annuaire MinVa', recherche: 'Google et moteurs', app: 'Application installée', direct: 'Lien tapé ou copié', autre: 'Autres sites', agenda: 'Agenda partagé' };
+  function pStats(c) {
+    c.innerHTML = tete('Statistiques', 'Combien de personnes voient votre site, d’où elles viennent et ce qu’elles font. Aucune information personnelle n’est enregistrée.',
+      filtres('f-periode', String(S.periode), [['7', '7 jours'], ['30', '30 jours'], ['90', '90 jours']])) + '<p class="note">Chargement…</p>';
+    document.getElementById('f-periode').onclick = function (e) { var b = e.target.closest('[data-filtre]'); if (b) { S.periode = +b.dataset.filtre; pStats(c); } };
+    MV.stats.lister(S.periode).then(function (l) {
+      var som = function (type) { return l.filter(function (x) { return x.type === type; }).reduce(function (t, x) { return t + x.n; }, 0); };
+      var vues = som('vue');
+      var jours = []; for (var j = S.periode - 1; j >= 0; j--) jours.push(new Date(Date.now() - j * 86400000).toISOString().slice(0, 10));
+      var parJour = jours.map(function (d) { return l.filter(function (x) { return x.type === 'vue' && x.jour === d; }).reduce(function (t, x) { return t + x.n; }, 0); });
+      var max = Math.max.apply(null, parJour.concat([1]));
+      var sources = {};
+      l.filter(function (x) { return x.type === 'vue'; }).forEach(function (x) { var k = NOMS_SOURCES[x.source] || NOMS_SOURCES.autre; sources[k] = (sources[k] || 0) + x.n; });
+      var triees = Object.keys(sources).sort(function (a, b) { return sources[b] - sources[a]; });
+      var tuiles = [['vue', 'visites', 'oeil'], ['whatsapp', 'clics vers votre WhatsApp', 'whatsapp'], ['partage', 'partages', 'partage'], ['don', 'dons déclarés', 'coeur'], ['inscription', 'inscriptions aux événements', 'evenement'], ['adhesion', 'demandes d’adhésion', 'plus'], ['ecoute', 'écoutes audio', 'actu'], ['image', 'images créées', 'photo'], ['installation', 'installations sur téléphone', 'telecharger']];
+      var zone = c.querySelector('.note'); if (zone) zone.remove();
+      c.insertAdjacentHTML('beforeend',
+        '<div class="tuiles tuiles-stats">' + tuiles.map(function (t) { return '<div class="tuile">' + ico(t[2]) + '<b>' + O.nb(som(t[0])) + '</b><span>' + t[1] + '</span></div>'; }).join('') + '</div>' +
+        '<div class="grille-2"><section class="bloc"><h2>Visites par jour</h2>' + (vues ? '<div class="histo" role="img" aria-label="Visites par jour sur ' + S.periode + ' jours">' + parJour.map(function (n, i) {
+          return '<span title="' + new Date(jours[i]).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) + ' : ' + n + ' visite' + (n > 1 ? 's' : '') + '" style="height:' + Math.max(2, Math.round(n / max * 100)) + '%"></span>';
+        }).join('') + '</div><div class="histo-legende"><span>' + new Date(jours[0]).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) + '</span><span>Aujourd’hui</span></div>'
+          : '<div class="vide"><h3>Pas encore de visite</h3><p>Partagez votre lien dans vos groupes WhatsApp : les visites apparaîtront ici.</p></div>') + '</section>' +
+        '<section class="bloc"><h2>D’où viennent vos visiteurs</h2>' + (triees.length ? '<ul class="sources">' + triees.map(function (k) {
+          var pct = Math.round(sources[k] / vues * 100);
+          return '<li><div><span>' + esc(k) + '</span><b>' + pct + ' %</b></div><div class="piste"><i style="width:' + pct + '%"></i></div></li>';
+        }).join('') + '</ul>' : '<p class="note">Rien pour l’instant.</p>') +
+        '<p class="note" style="margin-top:16px">Astuce : le lien partagé depuis votre console, vos affiches et vos QR codes est reconnu automatiquement. Vous voyez ainsi ce qui marche le mieux.</p></section></div>');
+    }).catch(function (e) { var z = c.querySelector('.note'); if (z) z.textContent = 'Les statistiques ne sont pas encore disponibles.'; MV.erreur('admin', e.message); });
   }
 
   // ---------------- Lancement ----------------

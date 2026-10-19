@@ -4,7 +4,7 @@
 // navigateur (localStorage). Organisations et personnes FICTIVES.
 // =====================================================================
 (function () {
-  var CLE = 'minva-demo-v2';
+  var CLE = 'minva-demo-v3';
   var jour = 86400000;
   function il_y_a(j, h) { return new Date(Date.now() - j * jour - (h || 0) * 3600000).toISOString(); }
   function dansJours(j) { return new Date(Date.now() + j * jour).toISOString().slice(0, 10); }
@@ -12,9 +12,10 @@
   var RUB = { apropos: true, actualites: true, projets: true, besoins: true, galerie: true, documents: true, equipe: true, contact: true };
 
   function graine() {
-    var o1 = uid(), o2 = uid(), o3 = uid();
+    var o1 = uid(), o2 = uid(), o3 = uid(), p1 = uid(), p2 = uid(), p3 = uid(), e1 = uid(), e2 = uid();
+    function dansH(j, h) { return new Date(new Date().setHours(0, 0, 0, 0) + j * jour + h * 3600000).toISOString(); }
     return {
-      version: 2,
+      version: 3,
       organisations: [
         { id: o1, slug: 'cfv-daloa', nom: 'Coopérative des femmes vivrières de Daloa', sigle: 'CFV', type_structure: 'cooperative', secteur: 'agriculture', ville: 'Daloa', region: 'Haut-Sassandra', annee_creation: 2014,
           slogan: 'Nourrir nos familles, faire vivre nos villages.',
@@ -24,7 +25,7 @@
           theme: 'kita', logo_url: null, couverture_url: null, rubriques: Object.assign({}, RUB),
           besoins: [{ type: 'financement', titre: 'Magasin de stockage', detail: 'Il manque 750 000 FCFA pour terminer la toiture.' }, { type: 'formation', titre: 'Gestion de stock', detail: 'Une formation à la tenue d’un registre de stock.' }],
           equipe: [{ role: 'Présidente', nom: 'Awa Gnahoré' }, { role: 'Trésorière', nom: 'Rosine Zadi' }, { role: 'Secrétaire', nom: 'Mariam Koné' }],
-          contact: { telephone: '+225 07 00 00 00 11', whatsapp: '2250700000011', email: 'cfv.daloa@exemple.ci', facebook: '', adresse: 'Quartier Tazibouo, Daloa' },
+          contact: { telephone: '+225 07 00 00 00 11', whatsapp: '2250700000011', email: 'cfv.daloa@exemple.ci', facebook: '', adresse: 'Quartier Tazibouo, Daloa', orange: '07 00 00 00 11', mtn: '05 00 00 00 11', moov: '', wave: '07 00 00 00 11', lien_wave: '' },
           dans_annuaire: true, actif: true, statut_verification: 'verifie', plan: 'organisation', abonnement_fin: dansJours(210),
           acces_support_actif: false, acces_support_corrections: false, acces_support_expire: null, created_at: il_y_a(120) },
         { id: o2, slug: 'lire-a-man', nom: 'Association Lire à Man', sigle: 'LM', type_structure: 'association', secteur: 'education', ville: 'Man', region: 'Tonkpi', annee_creation: 2019,
@@ -35,7 +36,7 @@
           theme: 'indigo', logo_url: null, couverture_url: null, rubriques: Object.assign({}, RUB),
           besoins: [{ type: 'materiel', titre: 'Livres jeunesse', detail: 'Livres en français niveau CP–CE, neufs ou en bon état.' }, { type: 'benevoles', titre: 'Lecteurs du mercredi', detail: 'Deux bénévoles pour les ateliers de 14 h à 16 h.' }],
           equipe: [{ role: 'Président', nom: 'Jean-Baptiste Gueu' }, { role: 'Trésorière', nom: 'Pauline Dion' }, { role: 'Secrétaire', nom: 'Serge Tia' }],
-          contact: { telephone: '+225 05 00 00 00 22', whatsapp: '2250500000022', email: 'lireaman@exemple.ci', facebook: '', adresse: 'EPP Libreville 2, Man' },
+          contact: { telephone: '+225 05 00 00 00 22', whatsapp: '2250500000022', email: 'lireaman@exemple.ci', facebook: '', adresse: 'EPP Libreville 2, Man', orange: '', mtn: '05 00 00 00 22', moov: '01 00 00 00 22', wave: '', lien_wave: '' },
           dans_annuaire: true, actif: true, statut_verification: 'verifie', plan: 'organisation', abonnement_fin: dansJours(45),
           acces_support_actif: false, acces_support_corrections: false, acces_support_expire: null, created_at: il_y_a(90) },
         { id: o3, slug: 'eau-propre-korhogo', nom: 'Association Eau Propre de Korhogo', sigle: 'EPK', type_structure: 'association', secteur: 'environnement', ville: 'Korhogo', region: 'Poro', annee_creation: 2016,
@@ -67,9 +68,9 @@
         { id: uid(), org_id: o3, type: 'evenement', texte: 'Formation des comités de gestion à Karakoro, jeudi 9 octobre. 6 villages attendus.', photos: [], created_at: il_y_a(12) }
       ],
       projets: [
-        { id: uid(), org_id: o1, titre: 'Un magasin de stockage pour la récolte de manioc', description: 'Stocker la récolte pour la vendre au meilleur moment, au lieu de brader à la récolte.', collecte: 1250000, objectif: 2000000, donateurs: 34, actif: true, created_at: il_y_a(50) },
-        { id: uid(), org_id: o2, titre: 'Une bibliothèque mobile pour 6 écoles du Tonkpi', description: 'Une moto-bibliothèque qui passe chaque semaine dans 6 écoles sans bibliothèque.', collecte: 430000, objectif: 1500000, donateurs: 51, actif: true, created_at: il_y_a(30) },
-        { id: uid(), org_id: o3, titre: 'Réhabiliter 5 pompes en panne avant la saison sèche', description: 'Pièces, main-d’œuvre et formation des comités pour 5 villages.', collecte: 980000, objectif: 1400000, donateurs: 22, actif: true, created_at: il_y_a(20) }
+        { id: p1, org_id: o1, titre: 'Un magasin de stockage pour la récolte de manioc', description: 'Stocker la récolte pour la vendre au meilleur moment, au lieu de brader à la récolte.', collecte: 1250000, objectif: 2000000, donateurs: 34, actif: true, created_at: il_y_a(50) },
+        { id: p2, org_id: o2, titre: 'Une bibliothèque mobile pour 6 écoles du Tonkpi', description: 'Une moto-bibliothèque qui passe chaque semaine dans 6 écoles sans bibliothèque.', collecte: 430000, objectif: 1500000, donateurs: 51, actif: true, created_at: il_y_a(30) },
+        { id: p3, org_id: o3, titre: 'Réhabiliter 5 pompes en panne avant la saison sèche', description: 'Pièces, main-d’œuvre et formation des comités pour 5 villages.', collecte: 980000, objectif: 1400000, donateurs: 22, actif: true, created_at: il_y_a(20) }
       ],
       documents: [
         { id: uid(), org_id: o1, type: 'statuts', annee: 2014, chemin: null, statut: 'verifie', commentaire: '', created_at: il_y_a(110) },
@@ -89,6 +90,33 @@
       demandes_abonnement: [
         { id: uid(), nom_organisation: 'ONG Femmes Leaders de Bouaké', type_structure: 'ong', secteur: 'femmes', ville: 'Bouaké', responsable: 'Mme Adjoua Konan', telephone: '+225 07 00 00 02 00', email: 'fl.bouake@exemple.ci', plan: 'organisation', message: 'Nous voulons un site pour présenter nos formations en couture.', statut: 'nouvelle', created_at: il_y_a(0, 5) }
       ],
+      dons: [
+        { id: uid(), org_id: o1, projet_id: p1, nom: 'Koffi Yao', anonyme: false, telephone: '07 00 00 01 01', montant: 25000, moyen: 'orange', message: 'Courage aux mamans de Daloa !', statut: 'confirme', created_at: il_y_a(2) },
+        { id: uid(), org_id: o1, projet_id: p1, nom: 'Mariette', anonyme: true, telephone: '', montant: 10000, moyen: 'wave', message: '', statut: 'confirme', created_at: il_y_a(6) },
+        { id: uid(), org_id: o1, projet_id: null, nom: 'Ibrahim Touré', anonyme: false, telephone: '05 00 00 01 02', montant: 5000, moyen: 'mtn', message: 'Pour la coopérative.', statut: 'declare', created_at: il_y_a(0, 3) }
+      ],
+      evenements: [
+        { id: e1, org_id: o1, titre: 'Journée portes ouvertes du magasin', description: 'Visite du chantier, dégustation d’attiéké et vente directe aux familles. Venez nombreux !', debut: dansH(9, 9), fin: dansH(9, 13), lieu: 'Magasin de la coopérative, Tazibouo', places: 60, inscriptions: true, created_at: il_y_a(4) },
+        { id: e2, org_id: o1, titre: 'Formation à la gestion de stock', description: 'Pour les membres : tenir un registre, éviter les pertes.', debut: dansH(23, 15), fin: null, lieu: 'Foyer des jeunes de Daloa', places: 25, inscriptions: true, created_at: il_y_a(2) },
+        { id: uid(), org_id: o2, titre: 'Concours de lecture à voix haute', description: 'Ouvert aux élèves du CE1 au CM2.', debut: dansH(14, 9), fin: dansH(14, 12), lieu: 'EPP Libreville 2, Man', places: null, inscriptions: true, created_at: il_y_a(1) }
+      ],
+      inscriptions: [
+        { id: uid(), evenement_id: e1, org_id: o1, nom: 'Aya Kouassi', telephone: '07 00 00 02 01', nombre: 3, created_at: il_y_a(1) },
+        { id: uid(), evenement_id: e1, org_id: o1, nom: 'Paul Bamba', telephone: '05 00 00 02 02', nombre: 2, created_at: il_y_a(0, 6) }
+      ],
+      adhesions: [
+        { id: uid(), org_id: o1, nom: 'Odette Gbalé', telephone: '07 00 00 03 01', email: '', ville: 'Zoukougbeu', message: 'Je cultive le manioc et je voudrais vendre avec la coopérative.', statut: 'nouvelle', created_at: il_y_a(0, 20) }
+      ],
+      statistiques: (function () {
+        var l = [], src = ['whatsapp', 'whatsapp', 'facebook', 'qr', 'direct', 'annuaire'];
+        for (var j = 0; j < 30; j++) {
+          var jr = new Date(Date.now() - j * jour).toISOString().slice(0, 10);
+          src.forEach(function (s, k) { var n = Math.max(0, Math.round((6 - k) * (1 + Math.sin(j / 3)) + (j % 4))); if (n) l.push({ org_id: o1, jour: jr, type: 'vue', source: s, n: n }); });
+          if (j % 2 === 0) l.push({ org_id: o1, jour: jr, type: 'whatsapp', source: 'direct', n: 1 + (j % 3) });
+          if (j % 5 === 0) l.push({ org_id: o1, jour: jr, type: 'partage', source: 'direct', n: 1 });
+        }
+        return l;
+      })(),
       erreurs_client: [
         { id: uid(), application: 'admin', message: 'TypeError: Failed to fetch (connexion coupée pendant l’envoi d’une photo)', page: 'admin.html#actualites', org_id: o2, created_at: il_y_a(0, 9) }
       ]
@@ -97,7 +125,7 @@
 
   var D = {
     lire: function () {
-      try { var s = JSON.parse(localStorage.getItem(CLE)); if (s && s.version === 2) return s; } catch (e) {}
+      try { var s = JSON.parse(localStorage.getItem(CLE)); if (s && s.version === 3) return s; } catch (e) {}
       var g = graine(); D.ecrire(g); return g;
     },
     ecrire: function (db) {

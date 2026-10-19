@@ -9,8 +9,8 @@
 <meta name="theme-color" content="#FAF8F3">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="css/base.css?v=202610192300">
-<link rel="stylesheet" href="css/site.css?v=202610192300">
+<link rel="stylesheet" href="css/base.css?v=202610200100">
+<link rel="stylesheet" href="css/site.css?v=202610200100">
 </head>
 <body>
 <div id="app" class="site" aria-busy="true">
@@ -25,18 +25,24 @@
   <p class="vis-compte" id="vis-compte"></p>
 </dialog>
 
+<dialog class="fenetre" id="fen-action" aria-labelledby="t-action">
+  <div class="fenetre-tete"><h2 id="t-action"></h2><button type="button" class="btn-icone" data-fermer aria-label="Fermer"></button></div>
+  <div class="fenetre-corps" id="action-corps"></div>
+</dialog>
+
 <dialog class="fenetre" id="fen-partage" aria-labelledby="t-partage">
   <div class="fenetre-tete"><h2 id="t-partage">Partager ce site</h2><button type="button" class="btn-icone" data-fermer aria-label="Fermer"></button></div>
   <div class="fenetre-corps" id="partage-corps"></div>
 </dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="js/config.js?v=202610192300"></script>
-<script src="js/outils.js?v=202610192300"></script>
-<script src="js/themes.js?v=202610192300"></script>
-<script src="js/demo-store.js?v=202610192300"></script>
-<script src="js/api.js?v=202610192300"></script>
-<script src="js/etoffe.js?v=202610192300"></script>
-<script src="js/site.js?v=202610192300"></script>
+<script src="js/config.js?v=202610200100"></script>
+<script src="js/outils.js?v=202610200100"></script>
+<script src="js/themes.js?v=202610200100"></script>
+<script src="js/demo-store.js?v=202610200100"></script>
+<script src="js/api.js?v=202610200100"></script>
+<script src="js/etoffe.js?v=202610200100"></script>
+<script src="js/partage-image.js?v=202610200100"></script>
+<script src="js/site.js?v=202610200100"></script>
 </body>
 </html>
