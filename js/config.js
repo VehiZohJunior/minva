@@ -32,6 +32,9 @@ window.MINVA_CONFIG = {
       inclus: ['Tout Essentiel', '3 administrateurs', 'Projets avec barre de collecte', 'Documents de confiance vérifiés par MinVa', 'Badge « Vérifié »'] },
     { id: 'reseau', nom: 'Réseau', prix: 25000, periode: 'mois',
       pour: 'Fédération ou réseau de plusieurs structures',
-      inclus: ['Tout Organisation', 'Accompagnement à la mise en ligne', 'Mise en avant dans l’annuaire', 'Assistance prioritaire'] }
+      inclus: ['Tout Organisation', 'Accompagnement à la mise en ligne', 'Mise en avant dans l’annuaire', 'Assistance prioritaire'] },
+    { id: 'institution', nom: 'Institution', prix: 50000, periode: 'mois',
+      pour: 'Grande ONG, fédération nationale ou structure avec plusieurs antennes',
+      inclus: ['Tout Réseau', 'Jusqu’à 5 sites (siège et antennes)', 'Mise en place faite par MinVa', 'Formation des administrateurs', 'Affiche QR code prête à imprimer', 'Place permanente en tête de l’annuaire', 'Assistance dédiée 7 jours sur 7'] }
   ]
 };
