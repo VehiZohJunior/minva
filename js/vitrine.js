@@ -30,6 +30,8 @@
   $('v-tarifs').addEventListener('click', function (e) { var a = e.target.closest('[data-plan]'); if (a) $('f-plan').value = a.dataset.plan; });
 
   // Formulaire : listes
+  $('f-type').innerHTML = O.TYPES_STRUCTURE.map(function (x) { return '<option value="' + x[0] + '"' + (x[0] === 'association' ? ' selected' : '') + '>' + esc(x[1]) + '</option>'; }).join('');
+  $('v-types').innerHTML = O.TYPES_STRUCTURE.map(function (x) { return '<li>' + esc(x[1]) + '</li>'; }).join('');
   $('f-sect').innerHTML = Object.keys(O.SECTEURS).map(function (k) { return '<option value="' + k + '">' + O.SECTEURS[k].nom + '</option>'; }).join('');
   $('f-plan').innerHTML = C.TARIFS.map(function (t) { return '<option value="' + t.id + '"' + (t.recommande ? ' selected' : '') + '>' + esc(t.nom) + ' · ' + O.nb(t.prix) + ' FCFA / ' + t.periode + '</option>'; }).join('');
   $('v-sect').innerHTML += Object.keys(O.SECTEURS).map(function (k) { return '<option value="' + k + '">' + O.SECTEURS[k].nom + '</option>'; }).join('');
@@ -45,7 +47,7 @@
   $('v-form').onsubmit = function (e) {
     e.preventDefault();
     var btn = $('f-ok'), retour = $('f-retour');
-    var d = { nom_organisation: $('f-org').value.trim(), secteur: $('f-sect').value, ville: $('f-ville').value.trim(), responsable: $('f-resp').value.trim(),
+    var d = { nom_organisation: $('f-org').value.trim(), type_structure: $('f-type').value, secteur: $('f-sect').value, ville: $('f-ville').value.trim(), responsable: $('f-resp').value.trim(),
       telephone: $('f-tel').value.trim(), email: $('f-email').value.trim(), plan: $('f-plan').value, message: $('f-msg').value.trim() };
     if (!d.nom_organisation || !d.responsable || !d.telephone) {
       retour.innerHTML = '<div class="erreur-form" role="alert">' + ico('alerte') + '<span>Indiquez au moins le nom de l’organisation, votre nom et votre téléphone.</span></div>'; return;
@@ -64,12 +66,12 @@
   function actifDepuis(o) { return O.joursDepuis(o.derniere_actualite); }
   function rendreAnnuaire() {
     var q = O.norm($('v-q').value), s = $('v-sect').value;
-    var l = orgs.filter(function (o) { return (!s || o.secteur === s) && (!q || O.norm([o.nom, o.ville, o.region, o.mission, o.slogan].join(' ')).indexOf(q) >= 0); });
+    var l = orgs.filter(function (o) { return (!s || o.secteur === s) && (!q || O.norm([o.nom, o.ville, o.region, o.mission, o.slogan, O.typeDe(o)[1]].join(' ')).indexOf(q) >= 0); });
     $('v-annuaire').innerHTML = l.length ? l.map(function (o) {
       var sect = O.SECTEURS[o.secteur] || O.SECTEURS.education, j = actifDepuis(o);
       return '<a class="v-org" href="' + esc(MV.lienSite(o.slug)) + '" style="--c:' + sect.c + '"><span class="mono">' + (o.logo_url ? '<img src="' + esc(o.logo_url) + '" alt="">' : esc(o.sigle || O.sigleDe(o.nom))) + '</span>' +
-        '<div><b>' + esc(o.nom) + (o.statut_verification === 'verifie' ? ' <span class="sr">vérifiée</span>' : '') + '</b><p>' + esc(o.mission || o.slogan || '') + '</p>' +
-        '<small class="' + (j <= 7 ? 'frais' : '') + '">' + esc([o.ville, sect.nom].filter(Boolean).join(' · ')) + (o.derniere_actualite ? ' · actualité ' + O.quand(o.derniere_actualite) : '') + (o.statut_verification === 'verifie' ? ' · Vérifiée' : '') + '</small></div></a>';
+        '<div><b>' + esc(o.nom) + (o.statut_verification === 'verifie' ? ' <span class="sr">' + O.accord(o, 'vérifié', 'vérifiée') + '</span>' : '') + '</b><p>' + esc(o.mission || o.slogan || '') + '</p>' +
+        '<small class="' + (j <= 7 ? 'frais' : '') + '">' + esc([O.typeDe(o)[1], o.ville, sect.nom].filter(Boolean).join(' · ')) + (o.derniere_actualite ? ' · actualité ' + O.quand(o.derniere_actualite) : '') + (o.statut_verification === 'verifie' ? ' · ' + O.accord(o, 'Vérifié', 'Vérifiée') : '') + '</small></div></a>';
     }).join('') : '<div class="v-vide">' + (orgs.length ? 'Aucune organisation ne correspond à votre recherche.' : 'Les premières organisations arrivent très bientôt. La vôtre peut être la première.') + '</div>';
   }
   $('v-q').oninput = rendreAnnuaire; $('v-sect').onchange = rendreAnnuaire;
@@ -82,7 +84,7 @@
       return '<a class="v-exemple" href="' + esc(MV.lienSite(o.slug)) + '"><div class="v-ex-haut" style="background:' + t.primaire + ';color:' + t.surPrimaire + '">' +
         (o.couverture_url ? '<img src="' + esc(o.couverture_url) + '" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.45">' : '<div class="bogolan"></div>') +
         '<span class="mono" style="background:' + t.surPrimaire + ';color:' + t.primaire + '">' + (o.logo_url ? '<img src="' + esc(o.logo_url) + '" alt="">' : esc(o.sigle || O.sigleDe(o.nom))) + '</span><b>' + esc(o.nom) + '</b></div>' +
-        '<div class="v-ex-bas"><span>' + esc(o.slogan || o.mission || '') + '</span><small>' + esc(sect.nom) + ' · ' + esc(o.ville || '') + ' · thème ' + esc(t.nom) + '</small><span class="lien">Visiter le site' + ico('suite') + '</span></div></a>';
+        '<div class="v-ex-bas"><span>' + esc(o.slogan || o.mission || '') + '</span><small>' + esc(O.typeDe(o)[1]) + ' · ' + esc(sect.nom) + ' · ' + esc(o.ville || '') + ' · thème ' + esc(t.nom) + '</small><span class="lien">Visiter le site' + ico('suite') + '</span></div></a>';
     }).join('');
     if (MV.mode === 'demo') $('v-ex-note').textContent = 'Organisations fictives, pour la démonstration.';
   }

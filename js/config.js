@@ -25,10 +25,10 @@ window.MINVA_CONFIG = {
   // Tarifs affichés sur le site vitrine (validés le 27/09/2026)
   TARIFS: [
     { id: 'essentiel', nom: 'Essentiel', prix: 6000, periode: 'mois',
-      pour: 'Petite association qui veut exister en ligne',
+      pour: 'Petite structure qui veut exister en ligne',
       inclus: ['Site personnalisé avec votre lien', 'Actualités illimitées avec photos', '1 administrateur', 'Apparition dans l’annuaire MinVa'] },
     { id: 'organisation', nom: 'Organisation', prix: 12000, periode: 'mois', recommande: true,
-      pour: 'Association, coopérative ou ONG qui cherche des soutiens',
+      pour: 'Association, coopérative, club ou ONG qui cherche des soutiens',
       inclus: ['Tout Essentiel', '3 administrateurs', 'Projets avec barre de collecte', 'Documents de confiance vérifiés par MinVa', 'Badge « Vérifié »'] },
     { id: 'reseau', nom: 'Réseau', prix: 25000, periode: 'mois',
       pour: 'Fédération ou réseau de plusieurs structures',

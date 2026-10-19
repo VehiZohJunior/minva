@@ -9,7 +9,7 @@
 (function () {
   var C = window.MINVA_CONFIG || {};
   var O = window.MVO;
-  // ?demo=1 : aperçu avec les associations d'exemple (données fictives, dans ce navigateur seulement)
+  // ?demo=1 : aperçu avec les organisations d'exemple (données fictives, dans ce navigateur seulement)
   var DEMO_FORCEE = /[?&]demo=1(&|$)/.test(location.search);
   var REEL = !DEMO_FORCEE && !!(C.SUPABASE_URL && C.SUPABASE_ANON_KEY && window.supabase);
   var MV = { mode: REEL ? 'reel' : 'demo' };
@@ -257,7 +257,7 @@
       return { org: org, actualites: ok(r[0]), projets: ok(r[1]), documents: ok(r[2]) };
     },
     annuaire: async function () {
-      return ok(await sb.from('organisations_publiques').select('id, slug, nom, sigle, secteur, ville, region, slogan, mission, theme, logo_url, beneficiaires, beneficiaires_label, besoins, statut_verification, derniere_actualite').eq('dans_annuaire', true));
+      return ok(await sb.from('organisations_publiques').select('id, slug, nom, sigle, type_structure, secteur, ville, region, slogan, mission, theme, logo_url, beneficiaires, beneficiaires_label, besoins, statut_verification, derniere_actualite').eq('dans_annuaire', true));
     }
   };
 

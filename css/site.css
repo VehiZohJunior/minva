@@ -49,6 +49,8 @@ body { background:var(--t-fond, var(--ivoire)); }
 .s-hero-in { max-width:1240px; margin:0 auto; padding:clamp(28px, 6vw, 72px) var(--gutter) clamp(36px, 6vw, 80px); display:grid; grid-template-columns:minmax(0, 7fr) minmax(0, 5fr); gap:clamp(28px, 5vw, 72px); align-items:center; }
 .s-badges { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:22px; }
 .s-badge { display:inline-flex; align-items:center; gap:6px; font-size:13px; line-height:18px; font-weight:600; padding:5px 12px 5px 10px; border-radius:999px; }
+.s-badge-type { background:transparent; color:var(--t-encre); box-shadow:inset 0 0 0 1.5px currentColor; }
+.s-badge-type { background:transparent; color:var(--t-encre); box-shadow:inset 0 0 0 1.5px currentColor; }
 .s-badge-sect { background:var(--c); color:var(--sur); }
 .s-badge-verif { background:var(--t-primaire); color:var(--t-sur-primaire); }
 .s-hero h1 { margin:0; font-size:calc(var(--t-echelle) * clamp(40px, 6.6vw, 88px)); line-height:1; text-wrap:balance; }

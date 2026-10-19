@@ -4,7 +4,7 @@
 // navigateur (localStorage). Organisations et personnes FICTIVES.
 // =====================================================================
 (function () {
-  var CLE = 'minva-demo-v1';
+  var CLE = 'minva-demo-v2';
   var jour = 86400000;
   function il_y_a(j, h) { return new Date(Date.now() - j * jour - (h || 0) * 3600000).toISOString(); }
   function dansJours(j) { return new Date(Date.now() + j * jour).toISOString().slice(0, 10); }
@@ -14,9 +14,9 @@
   function graine() {
     var o1 = uid(), o2 = uid(), o3 = uid();
     return {
-      version: 1,
+      version: 2,
       organisations: [
-        { id: o1, slug: 'cfv-daloa', nom: 'Coopérative des femmes vivrières de Daloa', sigle: 'CFV', secteur: 'agriculture', ville: 'Daloa', region: 'Haut-Sassandra', annee_creation: 2014,
+        { id: o1, slug: 'cfv-daloa', nom: 'Coopérative des femmes vivrières de Daloa', sigle: 'CFV', type_structure: 'cooperative', secteur: 'agriculture', ville: 'Daloa', region: 'Haut-Sassandra', annee_creation: 2014,
           slogan: 'Nourrir nos familles, faire vivre nos villages.',
           mission: 'Acheter la récolte de nos membres au juste prix, la stocker et la vendre ensemble.',
           apropos: "Créée en 2014 par des productrices de Daloa, la coopérative achète la récolte de ses membres au juste prix, la stocke et la revend en gros aux commerçants d'Abidjan. Elle finance aussi une tontine qui paie les frais de scolarité des enfants.",
@@ -27,7 +27,7 @@
           contact: { telephone: '+225 07 00 00 00 11', whatsapp: '2250700000011', email: 'cfv.daloa@exemple.ci', facebook: '', adresse: 'Quartier Tazibouo, Daloa' },
           dans_annuaire: true, actif: true, statut_verification: 'verifie', plan: 'organisation', abonnement_fin: dansJours(210),
           acces_support_actif: false, acces_support_corrections: false, acces_support_expire: null, created_at: il_y_a(120) },
-        { id: o2, slug: 'lire-a-man', nom: 'Association Lire à Man', sigle: 'LM', secteur: 'education', ville: 'Man', region: 'Tonkpi', annee_creation: 2019,
+        { id: o2, slug: 'lire-a-man', nom: 'Association Lire à Man', sigle: 'LM', type_structure: 'association', secteur: 'education', ville: 'Man', region: 'Tonkpi', annee_creation: 2019,
           slogan: 'Un livre dans chaque main, une bibliothèque dans chaque école.',
           mission: 'Donner à chaque école primaire du Tonkpi un coin lecture et des ateliers vivants.',
           apropos: "Des enseignants retraités de Man ont fondé l'association pour que chaque école primaire du Tonkpi ait un coin lecture. Les ateliers du mercredi mêlent contes en dan et lecture en français.",
@@ -38,7 +38,7 @@
           contact: { telephone: '+225 05 00 00 00 22', whatsapp: '2250500000022', email: 'lireaman@exemple.ci', facebook: '', adresse: 'EPP Libreville 2, Man' },
           dans_annuaire: true, actif: true, statut_verification: 'verifie', plan: 'organisation', abonnement_fin: dansJours(45),
           acces_support_actif: false, acces_support_corrections: false, acces_support_expire: null, created_at: il_y_a(90) },
-        { id: o3, slug: 'eau-propre-korhogo', nom: 'Association Eau Propre de Korhogo', sigle: 'EPK', secteur: 'environnement', ville: 'Korhogo', region: 'Poro', annee_creation: 2016,
+        { id: o3, slug: 'eau-propre-korhogo', nom: 'Association Eau Propre de Korhogo', sigle: 'EPK', type_structure: 'association', secteur: 'environnement', ville: 'Korhogo', region: 'Poro', annee_creation: 2016,
           slogan: 'L’eau potable, près de chaque famille.',
           mission: 'Réparer les pompes villageoises et former les villages à les entretenir.',
           apropos: "L'association répare et entretient les pompes à motricité humaine des villages autour de Korhogo, et forme dans chaque village un comité qui collecte une petite cotisation pour les pièces.",
@@ -87,7 +87,7 @@
         { id: uid(), org_id: o3, action: 'ouverture', details: 'Vous avez ouvert l’accès développeur (lecture seule) pour 72 h.', created_at: il_y_a(1) }
       ],
       demandes_abonnement: [
-        { id: uid(), nom_organisation: 'ONG Femmes Leaders de Bouaké', secteur: 'education', ville: 'Bouaké', responsable: 'Mme Adjoua Konan', telephone: '+225 07 00 00 02 00', email: 'fl.bouake@exemple.ci', plan: 'organisation', message: 'Nous voulons un site pour présenter nos formations en couture.', statut: 'nouvelle', created_at: il_y_a(0, 5) }
+        { id: uid(), nom_organisation: 'ONG Femmes Leaders de Bouaké', type_structure: 'ong', secteur: 'femmes', ville: 'Bouaké', responsable: 'Mme Adjoua Konan', telephone: '+225 07 00 00 02 00', email: 'fl.bouake@exemple.ci', plan: 'organisation', message: 'Nous voulons un site pour présenter nos formations en couture.', statut: 'nouvelle', created_at: il_y_a(0, 5) }
       ],
       erreurs_client: [
         { id: uid(), application: 'admin', message: 'TypeError: Failed to fetch (connexion coupée pendant l’envoi d’une photo)', page: 'admin.html#actualites', org_id: o2, created_at: il_y_a(0, 9) }
@@ -97,7 +97,7 @@
 
   var D = {
     lire: function () {
-      try { var s = JSON.parse(localStorage.getItem(CLE)); if (s && s.version === 1) return s; } catch (e) {}
+      try { var s = JSON.parse(localStorage.getItem(CLE)); if (s && s.version === 2) return s; } catch (e) {}
       var g = graine(); D.ecrire(g); return g;
     },
     ecrire: function (db) {

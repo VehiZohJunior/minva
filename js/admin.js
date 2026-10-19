@@ -228,7 +228,7 @@
   // =================================================================
   // MON SITE (éditeur + aperçu en direct)
   // =================================================================
-  var CHAMPS_SITE = ['nom', 'sigle', 'secteur', 'ville', 'region', 'annee_creation', 'slogan', 'logo_url', 'couverture_url', 'theme', 'rubriques', 'mission', 'apropos', 'zone', 'langues', 'beneficiaires', 'beneficiaires_label', 'membres', 'contact'];
+  var CHAMPS_SITE = ['nom', 'sigle', 'type_structure', 'secteur', 'ville', 'region', 'annee_creation', 'slogan', 'logo_url', 'couverture_url', 'theme', 'rubriques', 'mission', 'apropos', 'zone', 'langues', 'beneficiaires', 'beneficiaires_label', 'membres', 'contact'];
   function modifie() {
     if (!S.brouillon || !S.org) return false;
     return CHAMPS_SITE.some(function (k) { return JSON.stringify(S.brouillon[k]) !== JSON.stringify(S.org[k]); });
@@ -288,8 +288,9 @@
     var b = S.brouillon, z = document.getElementById('ong-corps'), h = '';
     if (S.ongletSite === 'identite') {
       h = '<div class="pile">' + champ('s-nom', 'Nom de l’organisation', b.nom, { max: 120 }) +
-        '<div class="grille-champs">' + champ('s-sigle', 'Sigle', b.sigle, { max: 8, aide: 'Affiché tant que vous n’avez pas de logo.' }) +
-        '<div class="champ"><label for="s-secteur">Secteur</label><select id="s-secteur" data-champ="secteur">' + Object.keys(O.SECTEURS).map(function (k) { return '<option value="' + k + '"' + (b.secteur === k ? ' selected' : '') + '>' + O.SECTEURS[k].nom + '</option>'; }).join('') + '</select></div></div>' +
+        '<div class="grille-champs"><div class="champ"><label for="s-type">Type de structure</label><select id="s-type" data-champ="type_structure">' + O.TYPES_STRUCTURE.map(function (x) { return '<option value="' + x[0] + '"' + (O.typeDe(b)[0] === x[0] ? ' selected' : '') + '>' + esc(x[1]) + '</option>'; }).join('') + '</select><span class="aide">Votre site s’accorde : « un club de confiance », « une coopérative de confiance »…</span></div>' +
+        champ('s-sigle', 'Sigle', b.sigle, { max: 8, aide: 'Affiché tant que vous n’avez pas de logo.' }) + '</div>' +
+        '<div class="grille-champs"><div class="champ"><label for="s-secteur">Secteur</label><select id="s-secteur" data-champ="secteur">' + Object.keys(O.SECTEURS).map(function (k) { return '<option value="' + k + '"' + (b.secteur === k ? ' selected' : '') + '>' + O.SECTEURS[k].nom + '</option>'; }).join('') + '</select></div></div>' +
         champ('s-slogan', 'Slogan', b.slogan, { max: 120, placeholder: 'Une phrase qui dit ce que vous changez', aide: 'Affiché en grand sous votre nom.' }) +
         '<div class="grille-champs">' + champ('s-ville', 'Ville', b.ville, { max: 60 }) +
         '<div class="champ"><label for="s-region">Région</label><select id="s-region" data-champ="region"><option value="">Choisir…</option>' + O.REGIONS.map(function (r) { return '<option' + (b.region === r ? ' selected' : '') + '>' + esc(r) + '</option>'; }).join('') + '</select></div>' +

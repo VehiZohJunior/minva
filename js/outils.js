@@ -62,9 +62,48 @@
   O.SECTEURS = {
     artisanat: { nom: 'Artisanat · Commerce', c: '#E4572E', sur: '#14100D' },
     agriculture: { nom: 'Agriculture · Rural', c: '#E8A93C', sur: '#14100D' },
-    environnement: { nom: 'Environnement · Santé', c: '#1F6E4A', sur: '#FBF7F0' },
-    education: { nom: 'Éducation · Culture', c: '#26415C', sur: '#FBF7F0' }
+    environnement: { nom: 'Environnement', c: '#1F6E4A', sur: '#FBF7F0' },
+    education: { nom: 'Éducation · Formation', c: '#26415C', sur: '#FBF7F0' },
+    sante: { nom: 'Santé', c: '#A63446', sur: '#FBF7F0' },
+    culture: { nom: 'Culture · Arts', c: '#7D3C6E', sur: '#FBF7F0' },
+    sport: { nom: 'Sport · Loisirs', c: '#1D6F8C', sur: '#FBF7F0' },
+    religion: { nom: 'Religion · Spiritualité', c: '#4F4485', sur: '#FBF7F0' },
+    solidarite: { nom: 'Solidarité · Entraide', c: '#9C4A2B', sur: '#FBF7F0' },
+    femmes: { nom: 'Femmes · Genre', c: '#B03A6A', sur: '#FBF7F0' },
+    jeunesse: { nom: 'Jeunesse', c: '#7FB03E', sur: '#14100D' },
+    droits: { nom: 'Droits · Citoyenneté', c: '#3B3632', sur: '#FBF7F0' },
+    developpement: { nom: 'Développement local', c: '#6E4B2E', sur: '#FBF7F0' },
+    professionnel: { nom: 'Professionnel · Économie', c: '#45566B', sur: '#FBF7F0' }
   };
+  // MinVa s'adresse à toutes les structures. [id, nom affiché, genre, mot dans une phrase si différent]
+  O.TYPES_STRUCTURE = [
+    ['structure', 'Structure', 'f'], ['cooperative', 'Coopérative', 'f'], ['association', 'Association', 'f'],
+    ['reseau', 'Réseau', 'm'], ['organisation', 'Organisation', 'f'], ['groupement', 'Groupement', 'm'],
+    ['mouvement', 'Mouvement', 'm'], ['plateforme', 'Plateforme', 'f'], ['federation', 'Fédération', 'f'],
+    ['confederation', 'Confédération', 'f'], ['club', 'Club', 'm'], ['fondation', 'Fondation', 'f'],
+    ['ong', 'ONG', 'f', 'ONG'], ['union', 'Union', 'f'], ['alliance', 'Alliance', 'f'], ['ligue', 'Ligue', 'f'],
+    ['collectif', 'Collectif', 'm'], ['coordination', 'Coordination', 'f'], ['amicale', 'Amicale', 'f'],
+    ['mutuelle', 'Mutuelle', 'f'], ['mutuelle-developpement', 'Mutuelle de développement', 'f'],
+    ['syndicat', 'Syndicat', 'm'], ['ordre', 'Ordre professionnel', 'm'], ['chambre', 'Chambre', 'f'],
+    ['conseil', 'Conseil', 'm'], ['comite', 'Comité', 'm'], ['cercle', 'Cercle', 'm'],
+    ['communaute', 'Communauté', 'f'], ['congregation', 'Congrégation', 'f'],
+    ['ressortissants', 'Association de ressortissants', 'f'], ['anciens-eleves', 'Association d’anciens élèves', 'f'],
+    ['scoops', 'Société coopérative (SCOOPS)', 'f', 'société coopérative'],
+    ['gie', 'GIE (groupement d’intérêt économique)', 'm', 'GIE'], ['tontine', 'Tontine', 'f']
+  ];
+  O.typeDe = function (o) {
+    var id = (o && o.type_structure) || 'association';
+    return O.TYPES_STRUCTURE.filter(function (x) { return x[0] === id; })[0] || O.TYPES_STRUCTURE[2];
+  };
+  // forme : 'le' → « l’association », « le club » ; 'un' → « une coopérative » ; sinon le mot seul
+  O.typeTexte = function (o, forme) {
+    var t = O.typeDe(o), mot = t[3] || t[1].toLowerCase(), f = t[2] === 'f';
+    if (forme === 'le') return (/^[aeiouéèêh]/i.test(mot) ? 'l’' : f ? 'la ' : 'le ') + mot;
+    if (forme === 'un') return (f ? 'une ' : 'un ') + mot;
+    return mot;
+  };
+  O.accord = function (o, masculin, feminin) { return O.typeDe(o)[2] === 'f' ? feminin : masculin; };
+  O.maj = function (s) { return s.charAt(0).toUpperCase() + s.slice(1); };
   O.TYPES_ACTU = { actu: 'Actualité', evenement: 'Événement', besoin: 'Besoin', rapport: 'Rapport' };
   O.TYPES_BESOIN = { financement: 'Financement', benevoles: 'Bénévoles', materiel: 'Matériel', formation: 'Formation', partenariat: 'Partenariat' };
   O.DOCS = [
@@ -87,6 +126,36 @@
     agriculture: '<path d="M12 20v-8"/><path d="M12 12c0-3.5-2.5-6-6.5-6 0 3.5 2.5 6 6.5 6z"/><path d="M12 14c0-3 2.2-5.5 6.5-5.5 0 3-2.2 5.5-6.5 5.5z"/><path d="M6 20h12"/>',
     environnement: '<path d="M5 19c0-8 5-13 14-14-1 9-6 14-14 14z"/><path d="M5 19l7-7"/>',
     education: '<path d="M3.5 6c3-1 5.8-.6 8.5 1.2V19c-2.7-1.8-5.5-2.2-8.5-1.2z"/><path d="M20.5 6c-3-1-5.8-.6-8.5 1.2V19c2.7-1.8 5.5-2.2 8.5-1.2z"/>',
+    sante: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v9M7.5 12h9"/>',
+    culture: '<path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/>',
+    sport: '<circle cx="12" cy="12" r="8.5"/><path d="M12 8l3.8 2.8-1.4 4.4H9.6l-1.4-4.4z"/><path d="M12 3.5V8M15.8 10.8l4.3-1.4M14.4 15.2l2.6 3.6M9.6 15.2L7 18.8M8.2 10.8L3.9 9.4"/>',
+    religion: '<path d="M8.5 20.5h7M10 20.5v-8h4v8"/><path d="M12 10c-1.6-1.2-1.9-3.2-.2-5.8 1.9 2.1 3.1 3.8.2 5.8z"/>',
+    solidarite: '<circle cx="9" cy="12" r="5"/><circle cx="15" cy="12" r="5"/>',
+    femmes: '<circle cx="12" cy="9" r="5"/><path d="M12 14v7M9 18h6"/>',
+    jeunesse: '<path d="M12 4l1.8 4.6 4.7 1.4-4.7 1.6L12 16l-1.8-4.4L5.5 10l4.7-1.4z"/><path d="M18 15.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/>',
+    droits: '<path d="M12 4v16M8 20h8M5 7h14"/><path d="M5 7l-2.5 6a2.5 2.5 0 0 0 5 0zM19 7l-2.5 6a2.5 2.5 0 0 0 5 0z"/>',
+    developpement: '<path d="M3.5 11L12 4l8.5 7"/><path d="M6 9.5V20h12V9.5"/><path d="M10 20v-5h4v5"/>',
+    professionnel: '<rect x="3.5" y="7.5" width="17" height="12" rx="2"/><path d="M9 7.5v-2h6v2M3.5 12.5h17"/>',
+    sante: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v9M7.5 12h9"/>',
+    culture: '<path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/>',
+    sport: '<circle cx="12" cy="12" r="8.5"/><path d="M12 8l3.8 2.8-1.4 4.4H9.6l-1.4-4.4z"/><path d="M12 3.5V8M15.8 10.8l4.3-1.4M14.4 15.2l2.6 3.6M9.6 15.2L7 18.8M8.2 10.8L3.9 9.4"/>',
+    religion: '<path d="M8.5 20.5h7M10 20.5v-8h4v8"/><path d="M12 10c-1.6-1.2-1.9-3.2-.2-5.8 1.9 2.1 3.1 3.8.2 5.8z"/>',
+    solidarite: '<circle cx="9" cy="12" r="5"/><circle cx="15" cy="12" r="5"/>',
+    femmes: '<circle cx="12" cy="9" r="5"/><path d="M12 14v7M9 18h6"/>',
+    jeunesse: '<path d="M12 4l1.8 4.6 4.7 1.4-4.7 1.6L12 16l-1.8-4.4L5.5 10l4.7-1.4z"/><path d="M18 15.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/>',
+    droits: '<path d="M12 4v16M8 20h8M5 7h14"/><path d="M5 7l-2.5 6a2.5 2.5 0 0 0 5 0zM19 7l-2.5 6a2.5 2.5 0 0 0 5 0z"/>',
+    developpement: '<path d="M3.5 11L12 4l8.5 7"/><path d="M6 9.5V20h12V9.5"/><path d="M10 20v-5h4v5"/>',
+    professionnel: '<rect x="3.5" y="7.5" width="17" height="12" rx="2"/><path d="M9 7.5v-2h6v2M3.5 12.5h17"/>',
+    sante: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v9M7.5 12h9"/>',
+    culture: '<path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/>',
+    sport: '<circle cx="12" cy="12" r="8.5"/><path d="M12 8l3.8 2.8-1.4 4.4H9.6l-1.4-4.4z"/><path d="M12 3.5V8M15.8 10.8l4.3-1.4M14.4 15.2l2.6 3.6M9.6 15.2L7 18.8M8.2 10.8L3.9 9.4"/>',
+    religion: '<path d="M8.5 20.5h7M10 20.5v-8h4v8"/><path d="M12 10c-1.6-1.2-1.9-3.2-.2-5.8 1.9 2.1 3.1 3.8.2 5.8z"/>',
+    solidarite: '<circle cx="9" cy="12" r="5"/><circle cx="15" cy="12" r="5"/>',
+    femmes: '<circle cx="12" cy="9" r="5"/><path d="M12 14v7M9 18h6"/>',
+    jeunesse: '<path d="M12 4l1.8 4.6 4.7 1.4-4.7 1.6L12 16l-1.8-4.4L5.5 10l4.7-1.4z"/><path d="M18 15.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/>',
+    droits: '<path d="M12 4v16M8 20h8M5 7h14"/><path d="M5 7l-2.5 6a2.5 2.5 0 0 0 5 0zM19 7l-2.5 6a2.5 2.5 0 0 0 5 0z"/>',
+    developpement: '<path d="M3.5 11L12 4l8.5 7"/><path d="M6 9.5V20h12V9.5"/><path d="M10 20v-5h4v5"/>',
+    professionnel: '<rect x="3.5" y="7.5" width="17" height="12" rx="2"/><path d="M9 7.5v-2h6v2M3.5 12.5h17"/>',
     actu: '<path d="M4 10v4h3l6 4V6L7 10z"/><path d="M16.5 9.5a3.5 3.5 0 0 1 0 5"/>',
     evenement: '<rect x="4" y="5.5" width="16" height="14" rx="2"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/>',
     besoin: '<path d="M4 13.5l3.5-1c1.2-.3 2.4 0 3.3.8l1.2 1h3a1.5 1.5 0 0 1 0 3H11"/><path d="M4 19.5l2-1h6.5l6.3-3.6a1.6 1.6 0 0 0-1.6-2.7L14.5 13.5"/><path d="M13 4.5c1.2-1.3 3.5-.6 3.5 1.3 0 1.8-3.5 3.7-3.5 3.7s-3.5-1.9-3.5-3.7c0-1.9 2.3-2.6 3.5-1.3z"/>',

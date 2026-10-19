@@ -1,5 +1,5 @@
 // =====================================================================
-// MinVa — site public d'une association · direction « L'Étoffe »
+// MinVa — site public d'une organisation (association, coopérative, club…) · direction « L'Étoffe »
 // Adresse : site.html?o=<adresse-du-site>   (ou /<adresse> via 404.html)
 // Mode aperçu (console admin) : site.html?o=<adresse>&apercu=1
 // =====================================================================
@@ -84,8 +84,9 @@
 
     // ----- Héros : le nom, la promesse, l'étoffe et le sceau -----
     h += '<section class="s-hero" id="haut"><div class="s-hero-in"><div class="s-hero-texte">' +
-      '<div class="s-badges"><span class="s-badge s-badge-sect" style="--c:' + sect.c + ';--sur:' + sect.sur + '">' + ico(o.secteur) + sect.nom + '</span>' +
-      (verifiee ? '<span class="s-badge s-badge-verif">' + ico('verifie') + 'Vérifiée par MinVa</span>' : '') + '</div>' +
+      '<div class="s-badges"><span class="s-badge s-badge-type">' + esc(O.typeDe(o)[1]) + '</span>' +
+      '<span class="s-badge s-badge-sect" style="--c:' + sect.c + ';--sur:' + sect.sur + '">' + ico(o.secteur) + sect.nom + '</span>' +
+      (verifiee ? '<span class="s-badge s-badge-verif">' + ico('verifie') + O.accord(o, 'Vérifié', 'Vérifiée') + ' par MinVa</span>' : '') + '</div>' +
       '<h1 class="titre">' + esc(o.nom) + '</h1>' +
       (o.slogan ? '<p class="s-slogan">' + esc(o.slogan) + '</p>' : '') +
       ((o.ville || o.region) ? '<p class="s-lieu">' + ico('lieu') + esc([o.ville, o.region].filter(Boolean).join(' · ')) + '</p>' : '') +
@@ -100,14 +101,14 @@
 
     // ----- Passeport : seulement des faits positifs -----
     var faits = [];
-    if (verifiee) faits.push(['<span class="ico-lg">' + ico('bouclier', 'ico-lg') + '</span>', 'Vérifiée', 'par MinVa']);
+    if (verifiee) faits.push(['<span class="ico-lg">' + ico('bouclier', 'ico-lg') + '</span>', O.accord(o, 'Vérifié', 'Vérifiée'), 'par MinVa']);
     if (o.annee_creation) faits.push(['<span class="ico-lg">' + ico('horloge', 'ico-lg') + '</span>', 'Depuis ' + o.annee_creation, (new Date().getFullYear() - o.annee_creation) + ' ans d’action']);
     if (o.beneficiaires) faits.push(['<span class="ico-lg">' + ico('coeur', 'ico-lg') + '</span>', O.nb(o.beneficiaires), o.beneficiaires_label || 'bénéficiaires']);
     if (o.membres) faits.push(['<span class="ico-lg">' + ico('equipe', 'ico-lg') + '</span>', O.nb(o.membres), 'membres']);
     var derniere = d.actualites[0];
-    if (derniere && O.joursDepuis(derniere.created_at) <= 30) faits.push(['<span class="s-pastille-vie" aria-hidden="true"></span>', 'Active', 'dernière nouvelle ' + O.quand(derniere.created_at)]);
+    if (derniere && O.joursDepuis(derniere.created_at) <= 30) faits.push(['<span class="s-pastille-vie" aria-hidden="true"></span>', O.accord(o, 'Actif', 'Active'), 'dernière nouvelle ' + O.quand(derniere.created_at)]);
     if (faits.length >= 2) {
-      h += '<div class="s-passeport"><ul aria-label="L’association en bref">' + faits.slice(0, 5).map(function (f) { return '<li>' + f[0] + '<div><b>' + esc(f[1]) + '</b><span>' + esc(f[2]) + '</span></div></li>'; }).join('') + '</ul></div>';
+      h += '<div class="s-passeport"><ul aria-label="' + esc(O.maj(O.typeTexte(o, 'le'))) + ' en bref">' + faits.slice(0, 5).map(function (f) { return '<li>' + f[0] + '<div><b>' + esc(f[1]) + '</b><span>' + esc(f[2]) + '</span></div></li>'; }).join('') + '</ul></div>';
     }
 
     h += '<main>';
@@ -167,8 +168,8 @@
 
     if (montrer.documents) {
       var noms_docs = {}; O.DOCS.forEach(function (x) { noms_docs[x[0]] = x[1]; });
-      h += '<section class="s-section" id="documents">' + entete(nom, t, 'Une association de confiance') + '<div class="s-confiance">' +
-        '<div class="s-confiance-titre"><span class="s-sceau-verif">' + ico('bouclier', 's-ico-verif') + '</span><div><b>' + (verifiee ? 'Vérifiée par MinVa' : 'Documents contrôlés par MinVa') + '</b>' +
+      h += '<section class="s-section" id="documents">' + entete(nom, t, O.maj(O.typeTexte(o, 'un')) + ' de confiance') + '<div class="s-confiance">' +
+        '<div class="s-confiance-titre"><span class="s-sceau-verif">' + ico('bouclier', 's-ico-verif') + '</span><div><b>' + (verifiee ? O.accord(o, 'Vérifié', 'Vérifiée') + ' par MinVa' : 'Documents contrôlés par MinVa') + '</b>' +
         '<span>Nos documents officiels ont été contrôlés par l’équipe MinVa.</span></div></div>' +
         (docsVerifies.length ? '<ul class="s-docs">' + docsVerifies.map(function (x) { return '<li>' + ico('verifie') + esc(noms_docs[x.type] || x.type) + (x.annee ? ' <small>' + x.annee + '</small>' : '') + '</li>'; }).join('') + '</ul>' : '<div></div>') +
         '</div></section>';
