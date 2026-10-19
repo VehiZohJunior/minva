@@ -1,0 +1,36 @@
+# MinVa : réveil automatique de la base Supabase (gratuit)
+# Un projet Supabase gratuit se met en pause après 7 jours sans visite.
+# Cette tâche GitHub interroge la base tous les 3 jours pour la garder éveillée.
+# Elle n'utilise que la clé publique (anon), déjà visible dans js/config.js.
+name: Réveil de la base Supabase
+
+on:
+  schedule:
+    - cron: "0 7 */3 * *"   # tous les 3 jours à 7 h (heure d'Abidjan = UTC)
+  workflow_dispatch:         # lancement à la main depuis l'onglet « Actions »
+  push:
+    paths:
+      - ".github/workflows/reveil-supabase.yml"   # premier essai dès l'installation
+
+permissions:
+  contents: read
+
+jobs:
+  reveil:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Interroger la base MinVa
+        env:
+          URL: https://rcxhwhfjlqkksdsyvbrh.supabase.co
+          CLE: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJjeGh3aGZqbHFra3Nkc3l2YnJoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1MTYxNDAsImV4cCI6MjEwNjA5MjE0MH0.-e5ihyab-i1jJPpZ6qHFNgwjk32ItgjSoOCG7cMufYc
+        run: |
+          for essai in 1 2 3; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" "$URL/rest/v1/organisations_publiques?select=id&limit=1" \
+              -H "apikey: $CLE" -H "Authorization: Bearer $CLE")
+            echo "Essai $essai : réponse $code"
+            if [ "$code" = "200" ]; then echo "La base MinVa est éveillée."; exit 0; fi
+            sleep 20
+          done
+          echo "La base ne répond pas : elle est peut-être en pause. Ouvrir supabase.com > projet minva > Restore project."
+          exit 1
